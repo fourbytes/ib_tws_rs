@@ -1,6 +1,8 @@
 [package]
 name = "ib_async"
 version = "0.1.0"
+description = "Tws api 9.73 rust binding"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 futures = "0.1"
