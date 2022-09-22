@@ -1,4 +1,4 @@
-extern crate async_ib;
+extern crate ib_async;
 extern crate bytes;
 extern crate chrono;
 extern crate failure;
@@ -7,9 +7,9 @@ extern crate tokio;
 extern crate tokio_codec;
 extern crate tokio_io;
 
-use async_ib::domain;
-use async_ib::message::request::*;
-use async_ib::TwsClientBuilder;
+use ib_async::domain;
+use ib_async::message::request::*;
+use ib_async::TwsClientBuilder;
 use futures::{Future, Stream};
 use std::net::SocketAddr;
 use std::string::ToString;
