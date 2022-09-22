@@ -1,0 +1,28 @@
+[package]
+name = "ib_async"
+version = "0.1.0"
+
+[dependencies]
+futures = "0.3.24"
+tokio = "1.21.0"
+failure = "0.1"
+byteorder = "1.2"
+lazy_static = "1.1.0"
+slog = "2.3.2"
+bytes="1.2.1"
+tokio-io = "0.1"
+tokio-uds = "0.2.1"
+tokio-codec = "0.1.0"
+tokio-timer = "0.2.6"
+quick-error = "2.0.1"
+memchr = "2.0"
+approx = "0.5.1"
+ordered-float = "3.0.0"
+bit = "0.1.1"
+chrono = "0.4"
+diesel = "2.0.0"
+
+
+[dev-dependencies]
+slog-async = "2.3.0"
+slog-term = "2.4.0"
