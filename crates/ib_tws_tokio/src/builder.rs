@@ -86,7 +86,7 @@ impl TwsClientBuilder {
         timeout: Duration,
         retry_count: i32,
     ) -> Result<HandshakeState, io::Error> {
-        debug!("wait for handshake ack");
+        trace!("wait for handshake ack");
         let ack = tokio::time::timeout(timeout, stream.try_next())
             .await
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "recv handshake ack timeout"))?;

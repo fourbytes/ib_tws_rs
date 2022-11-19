@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "ib_tws_tokio"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "bytes",
  "futures",
