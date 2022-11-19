@@ -5,7 +5,7 @@
 ### `ib_tws_core`
 Contains core components including messages and encoding/decoding utilities.
 
-### ib_tws_tokio
+### `ib_tws_tokio`
 A client implementation using Tokio.
 
 ## Credits
