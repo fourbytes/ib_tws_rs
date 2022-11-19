@@ -37,4 +37,4 @@ mod reroute;
 pub mod response;
 mod scanner;
 mod util;
-pub(crate) mod wire;
+pub mod wire;

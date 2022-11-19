@@ -1,13 +1,15 @@
 use std::net::SocketAddr;
 use std::string::ToString;
 
-use crate::TwsClientBuilder;
+use futures::StreamExt;
+use ib_tws_tokio::TwsClientBuilder;
 use ib_tws_core::domain;
 use ib_tws_core::message::request::*;
+use miette::IntoDiagnostic;
 
 #[tokio::main]
-async fn main() {
-    let port = std::env::args().nth(1).unwrap_or("".to_string());
+async fn main() -> miette::Result<()> {
+    let port = std::env::args().nth(1).unwrap_or_default();
     let port = port.parse::<u32>().unwrap_or(7497);
     let addr = format!("{}:{}", "127.0.0.1", port);
     let addr = addr.parse::<SocketAddr>().unwrap();
@@ -34,17 +36,13 @@ async fn main() {
 
     let client = builder
         .connect(addr, 0)
-        .map_err(|e| eprintln!("Read Error: {:?}", e))
-        .map(move |c| c)
-        .and_then(move |c| {
-            println!("version:{}", c.server_version);
-            c.send_request(stock_request);
-            c.send_request(forex_request);
-            c.for_each(move |buf| {
-                println!("buf: {:?}", buf);
-                Ok(())
-            })
-        });
+        .await.into_diagnostic()?;
 
-    tokio::task::spawn(client).await;
+    println!("version:{}", client.server_version);
+    client.send_request(stock_request);
+    client.send_request(forex_request);
+    client.for_each(move |buf| async move {
+        println!("buf: {:?}", buf);
+    }).await;
+    Ok(())
 }

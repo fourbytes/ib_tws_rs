@@ -63,7 +63,7 @@ impl TwsTask {
 impl Future for TwsTask {
     type Output = Result<(), ()>;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if !self.exiting {
             match self.poll_request(cx) {
                 Poll::Ready(Ok(_)) => {}
@@ -100,19 +100,19 @@ impl Future for TwsTask {
 impl Sink<Request> for TwsTask {
     type Error = io::Error;
 
-    fn start_send(self: Pin<&mut Self>, item: Request) -> Result<(), Self::Error> {
+    fn start_send(mut self: Pin<&mut Self>, item: Request) -> Result<(), Self::Error> {
         Pin::new(&mut self.stream).start_send(item)
     }
 
-    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.stream.poll_ready_unpin(cx)
     }
 
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.stream.poll_close_unpin(cx)
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.stream.poll_flush_unpin(cx)
     }
 }

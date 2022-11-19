@@ -17,3 +17,6 @@ futures = "0.3"
 ib_tws_core = "0.1.0-alpha"
 
 bytes = "1"
+
+[dev-dependencies]
+miette = { version = "5", features = ["fancy"] }

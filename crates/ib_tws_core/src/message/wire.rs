@@ -8,7 +8,7 @@ use bytes::Buf;
 use bytes::BytesMut;
 use memchr;
 
-pub(crate) trait TwsWireEncoder {
+pub trait TwsWireEncoder {
     fn push_slice(&mut self, extend: &[u8]);
 
     #[inline(always)]
@@ -79,7 +79,7 @@ impl TwsWireEncoder for Vec<u8> {
     }
 }
 
-pub(crate) trait TwsWireDecoder {
+pub trait TwsWireDecoder {
     fn split(&mut self) -> Result<BytesMut, io::Error>;
 
     fn read_int(&mut self) -> Result<i32, io::Error> {

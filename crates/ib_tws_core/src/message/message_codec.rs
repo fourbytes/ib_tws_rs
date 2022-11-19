@@ -23,7 +23,7 @@ pub struct MessageCodec {
 }
 
 impl MessageCodec {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         MessageCodec {
             state: FrameState::Head,
             ctx: Context::new(),
