@@ -2,9 +2,9 @@
 extern crate tracing;
 
 pub mod client;
-pub use client::TwsClient;
+pub use client::Client;
 
 pub mod builder;
-pub use builder::{FramedStream, TwsClientBuilder};
+pub use builder::{FramedStream, Builder};
 
 pub mod task;

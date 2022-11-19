@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use std::string::ToString;
 
 use futures::StreamExt;
-use ib_tws_tokio::TwsClientBuilder;
+use ib_tws_tokio::Builder;
 use ib_tws_core::domain;
 use ib_tws_core::message::{request::*, Response};
 use miette::IntoDiagnostic;
@@ -18,7 +18,7 @@ async fn main() -> miette::Result<()> {
     let port = port.parse::<u32>().unwrap_or(4001);
     let addr = format!("{}:{}", "127.0.0.1", port);
     let addr = addr.parse::<SocketAddr>().unwrap();
-    let builder = TwsClientBuilder::new(0);
+    let builder = Builder::new(0);
     let apple = domain::contract::Contract::new_stock("LKE", "ASX", "AUD").unwrap();
     let eur_gbp = domain::contract::Contract::new_forex("EUR.GBP").unwrap();
     let stock_request = Request::ReqMktData(ReqMktData {

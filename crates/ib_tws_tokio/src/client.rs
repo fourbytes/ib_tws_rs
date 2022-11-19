@@ -10,20 +10,20 @@ use ib_tws_core::message::response::*;
 use ib_tws_core::message::request::*;
 
 #[derive(Debug)]
-pub struct TwsClient {
+pub struct Client {
     pub channel: CommandChannel<Request, Response>,
     pub server_version: i32,
     //pub account: String,
     //pub next_valid_id: i32,
 }
 
-impl TwsClient {
+impl Client {
     pub fn send_request(&self, req: Request) {
         let _ = self.channel.tx.unbounded_send(req);
     }
 }
 
-impl Stream for TwsClient {
+impl Stream for Client {
     type Item = Response;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
@@ -32,7 +32,7 @@ impl Stream for TwsClient {
     }
 }
 
-impl Sink<Request> for TwsClient {
+impl Sink<Request> for Client {
     type Error = mpsc::SendError;
 
     fn start_send(mut self: Pin<&mut Self>, item: Request) -> Result<(), Self::Error> {
@@ -52,7 +52,7 @@ impl Sink<Request> for TwsClient {
     }
 }
 
-impl Drop for TwsClient {
+impl Drop for Client {
     fn drop(&mut self) {
         trace!("drop client");
     }

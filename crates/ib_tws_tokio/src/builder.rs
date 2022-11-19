@@ -11,7 +11,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio_util::codec::Framed;
 
-use super::client::TwsClient;
+use super::client::Client;
 use super::task::TwsTask;
 
 pub type FramedStream = Framed<TcpStream, MessageCodec>;
@@ -36,13 +36,13 @@ pub enum HandshakeState {
 
 #[derive(Debug)]
 pub enum StartApiAckState {
-    Verified((TwsClient, TwsTask)),
+    Verified((Client, TwsTask)),
     Continue(FramedStream, i32, Option<String>, Option<i32>),
     Error(ErrorKind),
 }
 
 #[derive(Debug)]
-pub struct TwsClientBuilder {
+pub struct Builder {
     client_id: i32,
     timeout: Duration,
 }
@@ -50,16 +50,16 @@ pub struct TwsClientBuilder {
 const REDIRECT_COUNT_MAX: i32 = 2;
 const DEFAULT_TIMEOUT_SECS: u64 = 2;
 
-impl TwsClientBuilder {
+impl Builder {
     pub fn new(client_id: i32) -> Self {
-        TwsClientBuilder {
+        Builder {
             client_id,
             timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
         }
     }
 
     pub fn new_with_timeout(client_id: i32, timeout: Duration) -> Self {
-        TwsClientBuilder { client_id, timeout }
+        Builder { client_id, timeout }
     }
 
     #[instrument(skip(stream))]
@@ -133,7 +133,7 @@ impl TwsClientBuilder {
         Self::do_handshake(stream, timeout, retry_count).await
     }
 
-    pub async fn handshake(&self, addr: SocketAddr) -> Result<TwsClient, io::Error> {
+    pub async fn handshake(&self, addr: SocketAddr) -> Result<Client, io::Error> {
         let mut retry = 0;
 
         loop {
@@ -143,7 +143,7 @@ impl TwsClientBuilder {
                 HandshakeState::Connected(stream, version) => {
                     let (command_channel, transport_channel) = channel4();
 
-                    let client = TwsClient {
+                    let client = Client {
                         channel: command_channel,
                         server_version: version,
                     };
@@ -168,7 +168,7 @@ impl TwsClientBuilder {
         }
     }
 
-    pub async fn connect(&self, addr: SocketAddr, client_id: i32) -> Result<TwsClient, io::Error> {
+    pub async fn connect(&self, addr: SocketAddr, client_id: i32) -> Result<Client, io::Error> {
         info!("connecting to client");
         let client = self.handshake(addr).await?;
         client.send_request(Request::StartApi(StartApi {
