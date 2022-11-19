@@ -3,12 +3,10 @@ use std::ops::Drop;
 use std::pin::Pin;
 use std::task::{Poll, Context};
 
-use futures::{Future, Sink, Stream, SinkExt, StreamExt, TryStreamExt};
-use futures::channel::mpsc;
+use futures::{Future, Sink, SinkExt, StreamExt, TryStreamExt};
 
 use crate::FramedStream;
-use crate::framed::Framed;
-use ib_tws_core::{Decoder, Encoder, TransportChannel};
+use ib_tws_core::TransportChannel;
 use ib_tws_core::message::request::*;
 use ib_tws_core::message::response::*;
 

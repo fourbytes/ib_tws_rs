@@ -17,6 +17,8 @@ futures = "0.3"
 ib_tws_core = "0.1.0-alpha"
 tracing = "0.1"
 
+tokio-util = { version = "0.7", features = ["codec"] }
+
 bytes = "1"
 
 [dev-dependencies]

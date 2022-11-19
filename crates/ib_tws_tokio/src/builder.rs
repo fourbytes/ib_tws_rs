@@ -1,6 +1,6 @@
 use std::{io, net::SocketAddr, time::Duration};
 
-use futures::{FutureExt, SinkExt, StreamExt, TryStreamExt};
+use futures::{SinkExt, TryStreamExt};
 use ib_tws_core::channel::channel4;
 use ib_tws_core::message::constants::{MAX_VERSION, MIN_VERSION};
 use ib_tws_core::message::message_codec::MessageCodec;
@@ -9,9 +9,9 @@ use ib_tws_core::message::response::*;
 use ib_tws_core::message::Request;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
+use tokio_util::codec::Framed;
 
 use super::client::TwsClient;
-use super::framed::Framed;
 use super::task::TwsTask;
 
 pub type FramedStream = Framed<TcpStream, MessageCodec>;

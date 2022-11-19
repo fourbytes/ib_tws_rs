@@ -1,12 +1,12 @@
 use std::{error, fmt, io, io::Cursor};
 
 use bytes::{Buf, BufMut, BytesMut};
+use tokio_util::codec::{Decoder, Encoder};
 
 use super::constants::MAX_MSG_LENGTH;
 use super::context::Context;
 use super::request::Request;
 use super::response::Response;
-use crate::{Decoder, Encoder};
 
 const FRAME_HEAD_LEN: usize = 4;
 
@@ -105,11 +105,10 @@ impl Decoder for MessageCodec {
     }
 }
 
-impl Encoder for MessageCodec {
-    type Item = Request;
+impl Encoder<Request> for MessageCodec {
     type Error = io::Error;
 
-    fn encode(&mut self, request: Self::Item, buf: &mut BytesMut) -> Result<(), Self::Error> {
+    fn encode(&mut self, request: Request, buf: &mut BytesMut) -> Result<(), Self::Error> {
         let mut req = self.ctx.encode_message(&request)?;
         buf.reserve(req.len() + 4);
         buf.put_u32(req.len() as u32);
