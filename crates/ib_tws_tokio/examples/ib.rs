@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate tracing;
+
 use std::net::SocketAddr;
 use std::string::ToString;
 
@@ -37,14 +40,14 @@ async fn main() -> miette::Result<()> {
     });
 
     let client = builder
-        .connect(addr, 0)
+        .connect(addr, 1)
         .await.into_diagnostic()?;
 
-    println!("version:{}", client.server_version);
-    client.send_request(stock_request);
-    client.send_request(forex_request);
+    info!("version:{}", client.server_version);
+    // client.send_request(stock_request);
+    // client.send_request(forex_request);
     client.for_each(move |buf| async move {
-        println!("buf: {:?}", buf);
+        info!("buf: {:?}", buf);
     }).await;
     Ok(())
 }

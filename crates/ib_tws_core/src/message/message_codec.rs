@@ -76,22 +76,34 @@ impl Decoder for MessageCodec {
     type Item = Response;
     type Error = io::Error;
 
+    #[instrument(err)]
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+        if src.is_empty() {
+            trace!("decoding empty message");
+            return Ok(None)
+        }
+        // info!("decoding");
         {
+            // trace!("decode head");
             let n = match self.state {
                 FrameState::Head => match self.decode_head(src)? {
                     Some(n) => {
                         self.state = FrameState::Data(n);
                         n
                     }
-                    None => return Ok(None),
+                    None => {
+                        warn!("head none");
+                        return Ok(None)
+                    },
                 },
                 FrameState::Data(n) => n,
             };
 
+            // trace!("decode data");
             match self.decode_data(n, src)? {
                 Some(mut data) => {
                     let response = self.decode_message(&mut data)?;
+                    // trace!(?response, "decoded response");
 
                     self.state = FrameState::Head;
 
@@ -99,7 +111,10 @@ impl Decoder for MessageCodec {
 
                     Ok(response)
                 }
-                None => Ok(None),
+                None => {
+                    warn!("data none");
+                    Ok(None)
+                },
             }
         }
     }
@@ -113,6 +128,7 @@ impl Encoder<Request> for MessageCodec {
         buf.reserve(req.len() + 4);
         buf.put_u32(req.len() as u32);
         buf.put(&mut req);
+        trace!(?request, ?buf, "encoded request");
         Ok(())
     }
 }

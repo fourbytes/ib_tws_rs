@@ -62,7 +62,7 @@ impl TwsClientBuilder {
         TwsClientBuilder { client_id, timeout }
     }
 
-    #[instrument(skip(stream), err)]
+    #[instrument(skip(stream))]
     async fn do_handshake(
         stream: TcpStream,
         timeout: Duration,
@@ -77,14 +77,20 @@ impl TwsClientBuilder {
         let _handshake_state = tokio::time::timeout(timeout, stream.send(request))
             .await
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "send handshake request timeout"))?; //failure::Error::from)?
-        Self::do_handshake_ack(stream, retry_count).await
+        Self::do_handshake_ack(stream, timeout, retry_count).await
     }
 
+    #[instrument(skip(stream))]
     async fn do_handshake_ack(
         mut stream: FramedStream,
+        timeout: Duration,
         retry_count: i32,
     ) -> Result<HandshakeState, io::Error> {
-        if let Some(response) = stream.try_next().await? {
+        debug!("wait for handshake ack");
+        let ack = tokio::time::timeout(timeout, stream.try_next())
+            .await
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "recv handshake ack timeout"))?;
+        if let Some(response) = ack? {
             info!(?response);
             if retry_count > REDIRECT_COUNT_MAX {
                 return Ok(HandshakeState::Error(ErrorKind::TooManyRedirect));
@@ -131,7 +137,6 @@ impl TwsClientBuilder {
         let mut retry = 0;
 
         loop {
-            debug!("loop");
             let state = Self::do_connect(addr, self.timeout, retry).await?;
             match state {
                 //HandshakeState::Connected(stream, version) => Ok(Loop::Break((stream, version))),

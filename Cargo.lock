@@ -245,6 +245,7 @@ dependencies = [
  "ordered-float",
  "thiserror",
  "tokio-util",
+ "tracing",
 ]
 
 [[package]]

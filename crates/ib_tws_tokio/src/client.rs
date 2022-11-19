@@ -16,7 +16,6 @@ pub struct TwsClient {
 
 impl TwsClient {
     pub fn send_request(&self, req: Request) {
-        trace!(?req, "sending request");
         let _ = self.channel.tx.unbounded_send(req);
     }
 }
@@ -25,6 +24,7 @@ impl Stream for TwsClient {
     type Item = Response;
 
     fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
+        trace!("client poll next");
         self.channel.rx.poll_next_unpin(cx)
     }
 }
