@@ -12,6 +12,7 @@ debug = 0
 # lto = "thin"
 
 [patch.crates-io]
+ib_tws_core = { path = "crates/ib_tws_core" }
 
 # [package]
 # name = "tokio_ib_tws"

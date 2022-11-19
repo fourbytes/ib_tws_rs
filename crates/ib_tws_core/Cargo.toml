@@ -1,7 +1,11 @@
 [package]
 name = "ib_tws_core"
-version = "0.1.0"
+description = "Core utilities for interacting with Interactive Broker's TWS API"
+version = "0.1.0-alpha.1"
 edition = "2021"
+readme = "../../README.md"
+keywords = ["finance", "library", "interactive-brokers"]
+categories = ["encoding"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
