@@ -234,7 +234,7 @@ dependencies = [
 
 [[package]]
 name = "ib_tws_core"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "approx",
  "bit",
@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "ib_tws_tokio"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 dependencies = [
  "bytes",
  "futures",
