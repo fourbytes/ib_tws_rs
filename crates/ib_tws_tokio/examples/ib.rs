@@ -1,17 +1,16 @@
 use std::net::SocketAddr;
 use std::string::ToString;
 
-use futures::{Future, Stream};
-use ib_async::TwsClientBuilder;
+use ib_tws_tokio::TwsClientBuilder;
 use ib_tws_core::domain;
 use ib_tws_core::message::request::*;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let port = std::env::args().nth(1).unwrap_or("".to_string());
     let port = port.parse::<u32>().unwrap_or(7497);
     let addr = format!("{}:{}", "127.0.0.1", port);
     let addr = addr.parse::<SocketAddr>().unwrap();
-    let mut rt = tokio::runtime::Runtime::new().unwrap();
     let builder = TwsClientBuilder::new(0);
     let apple = domain::contract::Contract::new_stock("AAPL", "SMART", "USD").unwrap();
     let eur_gbp = domain::contract::Contract::new_forex("EUR.GBP").unwrap();
@@ -47,7 +46,5 @@ fn main() {
             })
         });
 
-    rt.spawn(client);
-
-    rt.shutdown_on_idle().wait().unwrap();
+    tokio::task::spawn(client).await;
 }
