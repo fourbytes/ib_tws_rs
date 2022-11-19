@@ -8,7 +8,7 @@ mod account;
 mod auth;
 mod bulletins;
 mod commander;
-pub(crate) mod constants;
+mod constants;
 mod context;
 mod contract;
 mod depth_exchange;

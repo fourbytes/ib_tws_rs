@@ -1,19 +1,18 @@
 use std::{error::Error, fmt, io, net::SocketAddr, time::Duration};
 
 use bytes::{BufMut, BytesMut};
-use failure;
 use futures::{StreamExt, FutureExt, TryFutureExt, SinkExt};
 use futures::{Sink, Stream, channel::mpsc};
 use futures::future::{Future, lazy};
 use tokio::io::AsyncWriteExt;
 
-use crate::message::Request;
-use crate::message::message_codec::MessageCodec;
-use crate::message::request::*;
-use crate::message::response::*;
-use crate::message::constants::{MIN_VERSION, MAX_VERSION};
+use ib_tws_core::message::Request;
+use ib_tws_core::message::message_codec::MessageCodec;
+use ib_tws_core::message::request::*;
+use ib_tws_core::message::response::*;
+use ib_tws_core::message::constants::{MIN_VERSION, MAX_VERSION};
+use ib_tws_core::channel::{channel4, CommandChannel, TransportChannel};
 
-use super::channel::{channel4, CommandChannel, TransportChannel};
 use super::client::TwsClient;
 use super::framed::Framed;
 use super::task::TwsTask;
