@@ -1,10 +1,7 @@
 use std::task::Poll;
 use std::ops::Drop;
 
-use bytes::BytesMut;
-use futures::channel::mpsc;
-use futures::{Sink, Stream, StreamExt};
-use tokio::spawn;
+use futures::{Stream, StreamExt};
 use ib_tws_core::CommandChannel;
 use ib_tws_core::message::response::*;
 use ib_tws_core::message::request::*;
@@ -26,7 +23,7 @@ impl TwsClient {
 impl Stream for TwsClient {
     type Item = Response;
 
-    fn poll_next(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
         self.channel.rx.poll_next_unpin(cx)
     }
 }
