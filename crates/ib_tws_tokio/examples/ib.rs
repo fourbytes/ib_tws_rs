@@ -9,8 +9,10 @@ use miette::IntoDiagnostic;
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
+    tracing_subscriber::fmt::init();
+
     let port = std::env::args().nth(1).unwrap_or_default();
-    let port = port.parse::<u32>().unwrap_or(7497);
+    let port = port.parse::<u32>().unwrap_or(4001);
     let addr = format!("{}:{}", "127.0.0.1", port);
     let addr = addr.parse::<SocketAddr>().unwrap();
     let builder = TwsClientBuilder::new(0);

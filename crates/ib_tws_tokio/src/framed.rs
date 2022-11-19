@@ -99,6 +99,7 @@ impl<S: AsyncRead + Unpin, C: Decoder + Unpin> Stream for Framed<S, C> {
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let s = unsafe { self.get_unchecked_mut() };
         loop {
+            trace!("loop");
             // Repeatedly call `decode` or `decode_eof` as long as it is
             // "readable". Readable is defined as not having returned `None`. If
             // the upstream has returned EOF, and the decoder is no longer
@@ -125,6 +126,7 @@ impl<S: AsyncRead + Unpin, C: Decoder + Unpin> Stream for Framed<S, C> {
             // got room for at least one byte to read to ensure that we don't
             // get a spurious 0 that looks like EOF
             s.read_buf.reserve(1);
+            trace!("read buf");
             let mut fut = Box::pin(s.io.read_buf(&mut s.read_buf));
             match ready!(fut.try_poll_unpin(cx)) {
                 Ok(b) => if 0 == b {
@@ -169,11 +171,11 @@ impl<S: AsyncWrite + Unpin, C: Encoder + Unpin> Sink<C::Item> for Framed<S, C> {
     }
 
     fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        //trace!("flushing framed transport");
+        trace!("flushing framed transport");
 
         let s = self.get_mut();
         while !s.write_buf.is_empty() {
-            //trace!("writing; remaining={}", self.buffer.len());
+            trace!("writing; remaining={}", s.write_buf.len());
 
             let mut fut = Box::pin(s.io.write(&s.write_buf));
             let n = match ready!(fut.try_poll_unpin(cx)) {
@@ -198,13 +200,17 @@ impl<S: AsyncWrite + Unpin, C: Encoder + Unpin> Sink<C::Item> for Framed<S, C> {
         let mut fut = Box::pin(s.io.flush());
         ready!(fut.try_poll_unpin(cx));
 
-        //trace!("framed transport flushed");
+        trace!("framed transport flushed");
         Poll::Ready(Ok(()))
 
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        todo!()
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        match Box::pin(self.io.flush()).try_poll_unpin(cx) {
+            Poll::Ready(Err(e)) => Poll::Ready(Ok(())),
+            Poll::Ready(Ok(o)) => Poll::Ready(Ok(())),
+            Poll::Pending => Poll::Pending
+        }
     }
 }
 

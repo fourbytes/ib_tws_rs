@@ -15,8 +15,10 @@ repository = "https://github.com/fourbytes/ib_tws_rs"
 tokio = { version = "1", features = ["full"] }
 futures = "0.3"
 ib_tws_core = "0.1.0-alpha"
+tracing = "0.1"
 
 bytes = "1"
 
 [dev-dependencies]
 miette = { version = "5", features = ["fancy"] }
+tracing-subscriber = "0.3"

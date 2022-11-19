@@ -16,6 +16,7 @@ pub struct TwsClient {
 
 impl TwsClient {
     pub fn send_request(&self, req: Request) {
+        trace!(?req, "sending request");
         let _ = self.channel.tx.unbounded_send(req);
     }
 }
@@ -47,6 +48,6 @@ impl Stream for TwsClient {
 
 impl Drop for TwsClient {
     fn drop(&mut self) {
-        println!("drop client");
+        trace!("drop client");
     }
 }

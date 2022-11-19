@@ -1,6 +1,6 @@
 use std::{io, net::SocketAddr, time::Duration};
 
-use futures::{FutureExt, SinkExt, StreamExt};
+use futures::{FutureExt, SinkExt, StreamExt, TryStreamExt};
 use ib_tws_core::channel::channel4;
 use ib_tws_core::message::constants::{MAX_VERSION, MIN_VERSION};
 use ib_tws_core::message::message_codec::MessageCodec;
@@ -62,6 +62,7 @@ impl TwsClientBuilder {
         TwsClientBuilder { client_id, timeout }
     }
 
+    #[instrument(skip(stream), err)]
     async fn do_handshake(
         stream: TcpStream,
         timeout: Duration,
@@ -80,39 +81,36 @@ impl TwsClientBuilder {
     }
 
     async fn do_handshake_ack(
-        stream: FramedStream,
+        mut stream: FramedStream,
         retry_count: i32,
     ) -> Result<HandshakeState, io::Error> {
-        stream
-            .into_future()
-            .then(move |(frame, stream)| async move {
-                if retry_count > REDIRECT_COUNT_MAX {
-                    return Ok(HandshakeState::Error(ErrorKind::TooManyRedirect));
-                }
-                let response = match frame {
-                    Some(frame) => frame?,
-                    None => return Ok(HandshakeState::Error(ErrorKind::MissingFrame)),
-                };
+        if let Some(response) = stream.try_next().await? {
+            info!(?response);
+            if retry_count > REDIRECT_COUNT_MAX {
+                return Ok(HandshakeState::Error(ErrorKind::TooManyRedirect));
+            }
 
-                let (version, addr_or_time) = match response {
-                    Response::HandshakeAck(ack) => (ack.server_version, ack.addr_or_time),
-                    _ => return Ok(HandshakeState::Error(ErrorKind::InvalidHandshakeAck)),
-                };
+            let (version, addr_or_time) = match response {
+                Response::HandshakeAck(ack) => (ack.server_version, ack.addr_or_time),
+                _ => return Ok(HandshakeState::Error(ErrorKind::InvalidHandshakeAck)),
+            };
 
-                if version > 0 {
-                    Ok(HandshakeState::Connected(stream, version))
-                } else {
-                    let re_addr = match addr_or_time.parse::<SocketAddr>() {
-                        Ok(addr) => addr,
-                        _ => return Ok(HandshakeState::Error(ErrorKind::InvalidRedirectAddr)),
-                    };
-                    let _ = stream.into_inner().shutdown();
-                    Ok(HandshakeState::Redirect(re_addr))
-                }
-            })
-            .await
+            if version > 0 {
+                Ok(HandshakeState::Connected(stream, version))
+            } else {
+                let re_addr = match addr_or_time.parse::<SocketAddr>() {
+                    Ok(addr) => addr,
+                    _ => return Ok(HandshakeState::Error(ErrorKind::InvalidRedirectAddr)),
+                };
+                let _ = stream.into_inner().shutdown();
+                Ok(HandshakeState::Redirect(re_addr))
+            }
+        } else {
+            Ok(HandshakeState::Error(ErrorKind::MissingFrame))
+        }
     }
 
+    #[instrument(err)]
     async fn do_connect(
         addr: SocketAddr,
         timeout: Duration,
@@ -133,6 +131,7 @@ impl TwsClientBuilder {
         let mut retry = 0;
 
         loop {
+            debug!("loop");
             let state = Self::do_connect(addr, self.timeout, retry).await?;
             match state {
                 //HandshakeState::Connected(stream, version) => Ok(Loop::Break((stream, version))),
@@ -165,6 +164,7 @@ impl TwsClientBuilder {
     }
 
     pub async fn connect(&self, addr: SocketAddr, client_id: i32) -> Result<TwsClient, io::Error> {
+        info!("connecting to client");
         let client = self.handshake(addr).await?;
         client.send_request(Request::StartApi(StartApi {
             client_id,

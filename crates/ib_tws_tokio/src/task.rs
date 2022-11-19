@@ -80,7 +80,7 @@ impl Future for TwsTask {
 
         match (r, w) {
             (Poll::Ready(Ok(())), Poll::Ready(Ok(()))) if self.exiting => {
-                println!("task done");
+                trace!("task done");
                 Poll::Ready(Ok(()))
             }
             (Poll::Ready(Ok(())), Poll::Ready(Ok(()))) => {
@@ -119,6 +119,6 @@ impl Sink<Request> for TwsTask {
 
 impl Drop for TwsTask {
     fn drop(&mut self) {
-        println!("\n\ndrop task\n\n");
+        trace!("\n\ndrop task\n\n");
     }
 }
