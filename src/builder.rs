@@ -1,20 +1,24 @@
+use std::{error::Error, fmt, io, net::SocketAddr, time::Duration};
+
 use bytes::{BufMut, BytesMut};
 use failure;
-use futures::{Async, Poll, Sink, StartSend, Stream, sync::mpsc};
-use futures::future::{Future, FutureResult, lazy, Loop, loop_fn};
-use message::message_codec::MessageCodec;
-use message::request::*;
-use message::response::*;
-use std::{error::Error, fmt, io, net::SocketAddr, time::Duration};
+use futures::{StreamExt, FutureExt, TryFutureExt, SinkExt};
+use futures::{Sink, Stream, channel::mpsc};
+use futures::future::{Future, lazy};
+use tokio::io::AsyncWriteExt;
+
+use crate::message::Request;
+use crate::message::message_codec::MessageCodec;
+use crate::message::request::*;
+use crate::message::response::*;
+use crate::message::constants::{MIN_VERSION, MAX_VERSION};
+
 use super::channel::{channel4, CommandChannel, TransportChannel};
 use super::client::TwsClient;
 use super::framed::Framed;
 use super::task::TwsTask;
 use tokio;
 use tokio::net::TcpStream;
-use tokio::util::FutureExt;
-use tokio_io;
-use message::constants::{MIN_VERSION, MAX_VERSION};
 
 pub type FramedStream = Framed<TcpStream, MessageCodec>;
 
@@ -66,37 +70,36 @@ impl TwsClientBuilder {
             timeout,
         }
     }
-    fn do_handshake(
+
+    async fn do_handshake(
         stream: TcpStream,
         timeout: Duration,
         retry_count: i32,
-    ) -> impl Future<Item=HandshakeState, Error=io::Error> {
-        let stream = Framed::new(stream, MessageCodec::new());
+    ) -> Result<HandshakeState, io::Error> {
+        let mut stream = Framed::new(stream, MessageCodec::new());
         let request = Request::Handshake(Handshake {
             min_version: MIN_VERSION,
             max_version: MAX_VERSION,
             option: None,
         });
-        stream.send(request)
-            .timeout(timeout)
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "send handshake request timeout"))//failure::Error::from)
-            .and_then(move |stream| {
-                Self::do_handshake_ack(stream, retry_count)
-            })
+        let handshake_state = tokio::time::timeout(timeout, stream.send(request))
+            .await
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "send handshake request timeout"))?;//failure::Error::from)?
+        Self::do_handshake_ack(stream, retry_count).await
     }
 
-    fn do_handshake_ack(
+    async fn do_handshake_ack(
         stream: FramedStream,
         retry_count: i32,
-    ) -> impl Future<Item=HandshakeState, Error=io::Error> {
+    ) -> Result<HandshakeState, io::Error> {
         stream
             .into_future()
-            .map(move |(frame, stream)| {
+            .then(move |(frame, stream)| async {
                 if retry_count > REDIRECT_COUNT_MAX {
                     return HandshakeState::Error(ErrorKind::TooManyRedirect);
                 }
                 let response = match frame {
-                    Some(frame) => frame,
+                    Some(frame) => frame?,
                     None => return HandshakeState::Error(ErrorKind::MissingFrame),
                 };
 
@@ -112,39 +115,43 @@ impl TwsClientBuilder {
                         Ok(addr) => addr,
                         _ => return HandshakeState::Error(ErrorKind::InvalidRedirectAddr),
                     };
-                    let _ = stream.into_inner().shutdown(::std::net::Shutdown::Both);
+                    let _ = stream.into_inner().shutdown();
                     HandshakeState::Redirect(re_addr)
                 }
             })
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.0)) //::std::convert::From::from(e.0))
     }
 
-    fn do_connect(
+    async fn do_connect(
         addr: SocketAddr,
         timeout: Duration,
         retry_count: i32,
-    ) -> impl Future<Item=HandshakeState, Error=io::Error> {
-        TcpStream::connect(&addr)
-            .timeout(timeout)
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "connect request timeout"))//failure::Error::from)
+    ) -> Result<HandshakeState, io::Error> {
+        tokio::time::timeout(
+            timeout, 
+            TcpStream::connect(&addr)
+        ).await
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "connect request timeout"))?
             .and_then(move |stream| {
-                tokio::io::write_all(stream, b"API\0")
-                    .timeout(timeout)
+                tokio::time::timeout(timeout, stream.write_all(b"API\0"))
                     .map_err(|_| io::Error::new(io::ErrorKind::Other, "write API head error")) //failure::Error::from)
-            })
+            })?
             .and_then(move |(stream, _remind_buf)| {
                 Self::do_handshake(stream, timeout, retry_count)
             })
             .map(move |state| state)
     }
 
-    pub fn handshake(
+    pub async fn handshake(
         &self,
         addr: SocketAddr,
-    ) -> impl Future<Item=TwsClient, Error=io::Error> {
-        let retry = 0;
-        loop_fn((addr, self.timeout, retry), move |info| {
-            Self::do_connect(info.0, info.1, info.2).and_then(move |state| match state {
+    ) -> Result<TwsClient, io::Error> {
+        let mut retry = 0;
+
+        loop {
+            let state = Self::do_connect(addr, self.timeout, retry)
+                .await?;
+            match state {
                 //HandshakeState::Connected(stream, version) => Ok(Loop::Break((stream, version))),
                 HandshakeState::Connected(stream, version) => {
                     let (command_channel, transport_channel) = channel4();
@@ -162,25 +169,24 @@ impl TwsClientBuilder {
 
                     tokio::spawn(task);
 
-                    Ok(Loop::Break(client))
+                    return Ok(client)
                 }
                 HandshakeState::Redirect(re_addr) => {
-                    Ok(Loop::Continue((re_addr, info.1, info.2 + 1)))
+                    retry += 1;
                 }
                 HandshakeState::Error(_) => {
-                    Err(io::Error::new(io::ErrorKind::Other, "handshake error"))
+                    return Err(io::Error::new(io::ErrorKind::Other, "handshake error"))
                 }
-            })
-        })
+            }
+        }
     }
 
-    pub fn connect(&self, addr: SocketAddr, client_id: i32) -> impl Future<Item=TwsClient, Error=io::Error> {
-        self.handshake(addr).map(move |client| {
-            client.send_request(Request::StartApi(StartApi {
-                client_id,
-                optional_capabilities: "".to_string(),
-            }));
-            client
-        })
+    pub async fn connect(&self, addr: SocketAddr, client_id: i32) -> Result<TwsClient, io::Error> {
+        let client = self.handshake(addr).await?;
+        client.send_request(Request::StartApi(StartApi {
+            client_id,
+            optional_capabilities: "".to_string(),
+        }));
+        Ok(client)
     }
 }

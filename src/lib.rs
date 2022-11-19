@@ -26,10 +26,6 @@ extern crate slog_async;
 extern crate slog_term;
 #[macro_use]
 extern crate tokio;
-//extern crate tokio_codec;
-extern crate tokio_io;
-extern crate tokio_timer;
-extern crate tokio_uds;
 #[macro_use]
 extern crate diesel;
 

@@ -1,5 +1,9 @@
-use futures::sync::{mpsc, oneshot, mpsc::SendError};
-use futures::{future::Future, Async, Poll, Sink, StartSend, Stream};
+use std::pin::Pin;
+use std::task::{Poll, Context};
+
+use futures::{StreamExt, SinkExt};
+use futures::channel::{mpsc, oneshot, mpsc::SendError};
+use futures::{future::Future, Sink, Stream};
 
 #[derive(Debug)]
 pub struct CommandChannel<C, R> {
@@ -29,65 +33,70 @@ pub fn channel4<C, R>() -> (CommandChannel<C, R>, TransportChannel<C, R>) {
 }
 
 impl<C,R> TransportChannel<C, R> {
-    pub fn unbounded_send(&self, msg: R) -> Result<(), SendError<R>> {
+    pub fn unbounded_send(&self, msg: R) -> Result<(), SendError> {
         self.tx.unbounded_send(msg)
     }
 }
 
 impl<C,R> CommandChannel<C, R> {
-    pub fn unbounded_send(&self, msg: C) -> Result<(), SendError<C>> {
+    pub fn unbounded_send(&self, msg: C) -> Result<(), SendError> {
         self.tx.unbounded_send(msg)
     }
 }
 
 impl<C, R> Stream for TransportChannel<C, R> {
     type Item = C;
-    type Error = ();
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        self.rx.poll()
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.rx.poll_next_unpin(cx)
     }
 }
 
-impl<C, R> Sink for TransportChannel<C, R> {
-    type SinkItem = R;
-    type SinkError = mpsc::SendError<R>;
+impl<C, R> Sink<R> for TransportChannel<C, R> {
+    type Error = mpsc::SendError;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
+
+    fn start_send(&mut self, item: R) -> Result<R, Self::Error> {
         self.tx.start_send(item)
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        self.tx.poll_complete()
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.tx.poll_ready(cx)
     }
 
-    fn close(&mut self) -> Poll<(), Self::SinkError> {
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.tx.poll_flush_unpin(cx)
+    }
+
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.tx.close()
     }
 }
 
 impl<C, R> Stream for CommandChannel<C, R> {
     type Item = R;
-    type Error = ();
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        self.rx.poll()
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.rx.poll_next_unpin(cx)
     }
 }
 
-impl<C, R> Sink for CommandChannel<C, R> {
-    type SinkItem = C;
-    type SinkError = mpsc::SendError<C>;
+impl<C, R> Sink<C> for CommandChannel<C, R> {
+    type Error = mpsc::SendError;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
+    fn start_send(&mut self, item: C) -> Result<C, Self::Error> {
         self.tx.start_send(item)
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        self.tx.poll_complete()
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.tx.poll_ready(cx)
     }
 
-    fn close(&mut self) -> Poll<(), Self::SinkError> {
-        self.tx.close()
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.tx.poll_flush_unpin(cx)
+    }
+
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.tx.poll_close_unpin(cx)
     }
 }

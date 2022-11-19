@@ -1,11 +1,15 @@
-use {FramedStream, TransportChannel};
-use {Decoder, Encoder, Framed};
-use futures::{Async, Future, Poll, Sink, StartSend, Stream};
-use futures::sync::mpsc;
-use message::request::*;
-use message::response::*;
 use std::io;
 use std::ops::Drop;
+use std::pin::Pin;
+use std::task::{Poll, Context};
+
+use futures::{Future, Sink, Stream, SinkExt, StreamExt, TryStreamExt};
+use futures::channel::mpsc;
+
+use crate::{FramedStream, TransportChannel};
+use crate::{Decoder, Encoder, Framed};
+use crate::message::request::*;
+use crate::message::response::*;
 
 #[derive(Debug)]
 pub struct TwsTask {
@@ -18,50 +22,48 @@ pub struct TwsTask {
 }
 
 impl TwsTask {
-    fn poll_request(&mut self) -> Poll<(), ()> {
+    fn poll_request(&mut self, cx: &mut Context<'_>) -> Poll<()> {
         loop {
-            let response = match try_ready!(self.channel.poll()) {
-                Some(r) => r,
-                None => {
-                    return Err(());
-                }
+            let response = match self.channel.poll_next_unpin(cx) {
+                Poll::Ready(Some(r)) => r,
+                Poll::Ready(None) => {
+                    return Poll::Ready(Err(()));
+                },
+                Poll::Pending => return Poll::Pending
             };
 
             self.stream.start_send(response).map_err(|_| ())?;
         }
     }
 
-    fn poll_read(&mut self) -> Poll<(), ()> {
+    fn poll_read(&mut self, cx: &mut Context<'_>) -> Poll<()> {
         // exiting = true in some place???
         loop {
-            let item = match try_ready!(self.stream.poll().map_err(|_|())) {
-                Some(item) => item,
-                None => {
-                    return Err(());
-                }
+            let item = match self.stream.try_poll_next_unpin(cx) {
+                Poll::Ready(Some(item)) => item,
+                Poll::Ready(None) => return Err(()),
+                Poll::Pending => return Poll::Pending,
             };
 
             let result = self.channel.unbounded_send(item).map_err(|_| ())?;
 
             if self.exiting {
-                return Ok(Async::Ready(()))
+                return Ok(Poll::Ready(()))
             }
         }
     }
 
-    fn poll_write(&mut self) -> Poll<(), ()> {
+    fn poll_write(&mut self) -> Poll<()> {
         self.stream.poll_complete().map_err(|_| ())
     }
 }
 
 impl Future for TwsTask {
-    type Item = ();
-    type Error = ();
+    type Output = Result<(), ()>;
 
-
-    fn poll(&mut self) -> Result<Async<Self::Item>, Self::Error> {
+    fn poll(&mut self, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if !self.exiting {
-            match self.poll_request() {
+            match self.poll_request(cx) {
                 Ok(_) => {}
                 Err(()) => {
                     // no more requests will be enqueued
@@ -70,42 +72,41 @@ impl Future for TwsTask {
             }
         }
 
-        let r = self.poll_read()?;
+        let r = self.poll_read(cx)?;
         let w = self.poll_write()?;
 
         match (r, w) {
-            (Async::Ready(()), Async::Ready(())) if self.exiting => {
+            (Poll::Ready(()), Poll::Ready(())) if self.exiting => {
                 println!("task done");
-                Ok(Async::Ready(()))
+                Ok(Poll::Ready(()))
             }
-            (Async::Ready(()), Async::Ready(())) => {
-                Ok(Async::NotReady)
+            (Poll::Ready(()), Poll::Ready(())) => {
+                Ok(Poll::Pending)
             }
-            (Async::Ready(()), _) => panic!("outstanding requests, but response channel closed"),
-            (_, Async::Ready(())) if self.exiting => {
-                Ok(Async::NotReady)
+            (Poll::Ready(()), _) => panic!("outstanding requests, but response channel closed"),
+            (_, Poll::Ready(())) if self.exiting => {
+                Ok(Poll::Pending)
             }
             _ => {
-                Ok(Async::NotReady)
+                Ok(Poll::Pending)
             }
         }
     }
 }
 
-impl Sink for TwsTask {
-    type SinkItem = Request;
-    type SinkError = io::Error;
+impl Sink<Request> for TwsTask {
+    type Error = io::Error;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
+    fn start_send(&mut self, item: Request) -> Result<Request, Self::Error> {
         self.stream.start_send(item)
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        self.stream.poll_complete()
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.stream.poll_ready_unpin(cx)
     }
 
-    fn close(&mut self) -> Poll<(), Self::SinkError> {
-        self.stream.close()
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.stream.poll_close_unpin(cx)
     }
 }
 

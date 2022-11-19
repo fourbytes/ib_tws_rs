@@ -1,11 +1,12 @@
 use std::fmt;
 use std::io::{self, Read, Write};
-
-use tokio_io::{AsyncRead, AsyncWrite};
+use std::pin::Pin;
+use std::task::{Poll, Context};
 
 use super::codec::{Decoder, Encoder};
 use bytes::BytesMut;
-use futures::{Async, AsyncSink, Poll, Sink, StartSend, Stream};
+use futures::{Sink, Stream};
+use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, AsyncReadExt};
 use std::fmt::Debug;
 
 /// A unified `Stream` and `Sink` interface to an underlying I/O object, using
@@ -93,10 +94,9 @@ impl<S: Debug, C: Debug> fmt::Debug for Framed<S, C> {
 }
 
 impl<S: AsyncRead, C: Decoder> Stream for Framed<S, C> {
-    type Item = C::Item;
-    type Error = C::Error;
+    type Item = Result<C::Item, C::Error>;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
             // Repeatedly call `decode` or `decode_eof` as long as it is
             // "readable". Readable is defined as not having returned `None`. If
@@ -105,12 +105,12 @@ impl<S: AsyncRead, C: Decoder> Stream for Framed<S, C> {
             // readable again, at which point the stream is terminated.
             if self.is_readable {
                 if self.eof {
-                    let frame = self.codec.decode_eof(&mut self.read_buf)?;
-                    return Ok(Async::Ready(frame));
+                    let frame = self.codec.decode_eof(&mut self.read_buf);
+                    return Poll::Ready(Some(frame.map(|f| f.unwrap())));
                 }
 
                 if let Some(frame) = self.codec.decode(&mut self.read_buf)? {
-                    return Ok(Async::Ready(Some(frame)));
+                    return Poll::Ready(Some(Ok(frame)));
                 }
 
                 self.is_readable = false;
@@ -122,7 +122,7 @@ impl<S: AsyncRead, C: Decoder> Stream for Framed<S, C> {
             // got room for at least one byte to read to ensure that we don't
             // get a spurious 0 that looks like EOF
             self.read_buf.reserve(1);
-            if 0 == try_ready!(self.io.read_buf(&mut self.read_buf)) {
+            if 0 == ready!(self.io.read_buf(&mut self.read_buf)) {
                 self.eof = true;
             }
 
@@ -131,40 +131,44 @@ impl<S: AsyncRead, C: Decoder> Stream for Framed<S, C> {
     }
 }
 
-impl<S: AsyncWrite, C: Encoder> Sink for Framed<S, C> {
-    type SinkItem = C::Item;
-    type SinkError = C::Error;
+impl<S: AsyncWrite, C: Encoder> Sink<C::Item> for Framed<S, C> {
+    type Error = C::Error;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
+    fn start_send(self: Pin<&mut Self>, item: C::Item) -> Result<(), Self::Error> {
         // If the buffer is already over 8KiB, then attempt to flush it. If after flushing it's
         // *still* over 8KiB, then apply backpressure (reject the send).
         if self.write_buf.len() >= BACKPRESSURE_BOUNDARY {
-            self.poll_complete()?;
+            self.poll_ready()?;
 
             if self.write_buf.len() >= BACKPRESSURE_BOUNDARY {
-                return Ok(AsyncSink::NotReady(item));
+                return Ok(Poll::Pending(item));
             }
         }
 
         self.codec.encode(item, &mut self.write_buf)?;
 
-        Ok(AsyncSink::Ready)
+        Ok(Poll::Ready(()))
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
+    /* fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        // try_ready!(self.poll_complete());
+        self.io.shutdown()
+    }*/
+
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         //trace!("flushing framed transport");
 
         while !self.write_buf.is_empty() {
             //trace!("writing; remaining={}", self.buffer.len());
 
-            let n = try_ready!(self.io.poll_write(&self.write_buf));
+            let n = ready!(self.io.poll_write(&self.write_buf));
 
             if n == 0 {
-                return Err(io::Error::new(
+                return Poll::Ready(Err(io::Error::new(
                     io::ErrorKind::WriteZero,
                     "failed to
                                           write frame to transport",
-                ).into());
+                ).into()))
             }
 
             // TODO: Add a way to `bytes` to do this w/o returning the drained
@@ -173,15 +177,15 @@ impl<S: AsyncWrite, C: Encoder> Sink for Framed<S, C> {
         }
 
         // Try flushing the underlying IO
-        try_ready!(self.io.poll_flush());
+        ready!(self.io.flush());
 
         //trace!("framed transport flushed");
-        Ok(Async::Ready(()))
+        Poll::Ready(Ok(()))
+
     }
 
-    fn close(&mut self) -> Poll<(), Self::SinkError> {
-        try_ready!(self.poll_complete());
-        Ok(self.io.shutdown()?)
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        todo!()
     }
 }
 
@@ -192,9 +196,9 @@ impl<S: Read, C> Read for Framed<S, C> {
 }
 
 impl<S: AsyncRead, C> AsyncRead for Framed<S, C> {
-    unsafe fn prepare_uninitialized_buffer(&self, buf: &mut [u8]) -> bool {
+    /* unsafe fn prepare_uninitialized_buffer(&self, buf: &mut [u8]) -> bool {
         self.io.prepare_uninitialized_buffer(buf)
-    }
+    } */
 }
 
 impl<S: Write, C> Write for Framed<S, C> {
@@ -208,7 +212,7 @@ impl<S: Write, C> Write for Framed<S, C> {
 }
 
 impl<S: AsyncWrite, C> AsyncWrite for Framed<S, C> {
-    fn shutdown(&mut self) -> Poll<(), io::Error> {
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {
         self.io.shutdown()
     }
 }

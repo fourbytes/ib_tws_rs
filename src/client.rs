@@ -1,12 +1,14 @@
-use bytes::BytesMut;
-use futures::sync::mpsc;
-use futures::{Poll, Sink, StartSend, Stream};
-use tokio::spawn;
-use std::default::Default;
-use {CommandChannel};
-use message::response::*;
-use message::request::*;
+use std::task::Poll;
 use std::ops::Drop;
+use std::default::Default;
+
+use bytes::BytesMut;
+use futures::channel::mpsc;
+use futures::{Sink, Stream, StreamExt};
+use tokio::spawn;
+use crate::CommandChannel;
+use crate::message::response::*;
+use crate::message::request::*;
 
 #[derive(Debug)]
 pub struct TwsClient {
@@ -18,16 +20,15 @@ pub struct TwsClient {
 
 impl TwsClient {
     pub fn send_request(&self, req: Request) {
-        let _ =self.channel.tx.unbounded_send(req);
+        let _ = self.channel.tx.unbounded_send(req);
     }
 }
 
 impl Stream for TwsClient {
     type Item = Response;
-    type Error = ();
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        self.channel.rx.poll()
+    fn poll_next(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
+        self.channel.rx.poll_next_unpin(cx)
     }
 }
 

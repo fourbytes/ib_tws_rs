@@ -1,30 +1,45 @@
-[package]
-name = "ib_async"
-version = "0.1.1"
-description = "Tws api 9.73 rust binding"
-license = "MIT OR Apache-2.0"
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+default-members = ["crates/ib_tws_tokio"]
 
-[dependencies]
-futures = "0.1"
-tokio = "0.1.8"
-failure = "0.1"
-byteorder = "1.2"
-lazy_static = "1.1.0"
-slog = "2.3.2"
-bytes="0.4.9"
-tokio-io = "0.1"
-tokio-uds = "0.2.1"
-tokio-codec = "0.1.0"
-tokio-timer = "0.2.6"
-quick-error = "1.2.2"
-memchr = "2.0"
-approx = "0.3.0"
-ordered-float = "0.5.0"
-bit = "0.1.1"
-chrono = "0.4"
-diesel = "1.3.2"
+[profile.dev]
+# Disabling debug info speeds up builds a bunch,
+# and we don't rely on it for debugging that much.
+debug = 0
 
+[profile.release]
+# lto = "thin"
 
-[dev-dependencies]
-slog-async = "2.3.0"
-slog-term = "2.4.0"
+[patch.crates-io]
+
+# [package]
+# name = "tokio_ib_tws"
+# version = "0.1.0"
+# edition = "2021"
+# description = "A Tokio 1 client for the Interactive Brokers TWS API"
+# license = "MIT OR Apache-2.0"
+# 
+# [dependencies]
+# futures = "0.3"
+# tokio = { version = "1", features = ["full"] }
+# failure = "0.1"
+# byteorder = "1.2"
+# lazy_static = "1.1.0"
+# slog = "2.3.2"
+# bytes = "1"
+# tokio-util = "0.7"
+# # tokio-uds = "0.2.7"
+# # tokio-codec = "0.1.0"
+# # tokio-timer = "0.2.13"
+# quick-error = "1.2.2"
+# memchr = "2.0"
+# approx = "0.3.0"
+# ordered-float = "0.5.0"
+# bit = "0.1.1"
+# chrono = "0.4"
+# diesel = "1.3.2"
+# 
+# [dev-dependencies]
+# slog-async = "2.3.0"
+# slog-term = "2.4.0"
