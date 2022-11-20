@@ -18,7 +18,6 @@ async fn main() -> miette::Result<()> {
     let port = port.parse::<u32>().unwrap_or(4001);
     let addr = format!("{}:{}", "127.0.0.1", port);
     let addr = addr.parse::<SocketAddr>().unwrap();
-    let builder = Builder::new(0);
     let apple = domain::contract::Contract::new_stock("LKE", "ASX", "AUD").unwrap();
     let eur_gbp = domain::contract::Contract::new_forex("EUR.GBP").unwrap();
     let stock_request = Request::ReqMktData(ReqMktData {
@@ -39,11 +38,11 @@ async fn main() -> miette::Result<()> {
         mkt_data_options: Vec::new(),
     });
 
-    let mut client = builder
+    let client = Builder::new(0)
         .connect(addr, 1)
         .await.into_diagnostic()?;
+    info!(version = client.server_version);
 
-    info!("version:{}", client.server_version);
     let (mut sink, stream) = client.split();
     sink.send(stock_request).await.into_diagnostic()?;
     sink.send(forex_request).await.into_diagnostic()?;

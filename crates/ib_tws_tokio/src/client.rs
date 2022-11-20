@@ -27,7 +27,6 @@ impl Stream for Client {
     type Item = Response;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
-        trace!("client poll next");
         self.channel.rx.poll_next_unpin(cx)
     }
 }

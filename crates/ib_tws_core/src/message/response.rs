@@ -505,6 +505,7 @@ pub struct ErrMsgMsg {
     pub id: i32,
     pub error_code: i32,
     pub error_message: String,
+    pub advanced_order_reject_json: Option<String>,
 }
 
 #[derive(Debug, Clone)]

@@ -24,7 +24,6 @@ impl TwsTask {
     #[instrument(skip(self, cx))]
     fn poll_request(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), ()>> {
         loop {
-            trace!("loop");
             let request = match ready!(self.channel.poll_next_unpin(cx)) {
                 Some(r) => r,
                 None => {
@@ -32,7 +31,6 @@ impl TwsTask {
                 },
             };
 
-            trace!(?request, "start send");
             Pin::new(&mut self.stream).start_send(request).map_err(|_| ())?;
             ready!(self.stream.poll_flush_unpin(cx));
         }
@@ -42,7 +40,6 @@ impl TwsTask {
     fn poll_read(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), ()>> {
         // exiting = true in some place???
         loop {
-            trace!("loop");
             let item = match ready!(self.stream.try_poll_next_unpin(cx)) {
                 Some(Ok(item)) => item,
                 Some(Err(_)) => return Poll::Ready(Err(())),
@@ -59,7 +56,6 @@ impl TwsTask {
 
     #[instrument(skip(self, cx))]
     fn poll_write(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), ()>> {
-        trace!("poll write");
         self.stream.poll_ready_unpin(cx).map_err(|_| ())
     }
 }
@@ -68,7 +64,6 @@ impl Future for TwsTask {
     type Output = Result<(), ()>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        trace!("poll task");
         if !self.exiting {
             match self.poll_request(cx) {
                 Poll::Ready(Ok(_)) => return Poll::Pending,
@@ -82,7 +77,6 @@ impl Future for TwsTask {
 
         let r = self.poll_read(cx);
         let w = self.poll_write(cx);
-        trace!(?r, ?w);
 
         match (r, w) {
             (Poll::Ready(Ok(())), Poll::Ready(Ok(()))) if self.exiting => {
