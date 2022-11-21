@@ -56,3 +56,9 @@ impl Drop for Client {
         trace!("drop client");
     }
 }
+
+impl Client {
+    pub async fn req_account_summary(&self, msg: ReqMktData) -> Vec<AccountSummaryMsg> {
+        vec![]
+    }
+}
