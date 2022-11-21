@@ -27,6 +27,7 @@ pub fn encode_req_mkt_depth_exchanges(
     Ok(DispatchId::Global(OPCODE_REQ_MKT_DEPTH_EXCHANGES))
 }
 
+#[instrument(err)]
 pub fn decode_mkt_depth_exchanges_msg(
     ctx: &mut Context,
     buf: &mut BytesMut,

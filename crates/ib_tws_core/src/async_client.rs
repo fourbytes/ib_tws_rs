@@ -13,8 +13,8 @@ use crate::{
     domain::ContractDetails,
     message::{
         constants::{MAX_VERSION, MIN_VERSION},
-        request::{Handshake, ReqAccountSummary, ReqContractDetails, StartApi},
-        response::{AccountSummaryMsg, HandshakeAck, ErrMsgMsg},
+        request::{Handshake, ReqAccountSummary, ReqContractDetails, StartApi, ReqMktDepthExchanges},
+        response::{AccountSummaryMsg, HandshakeAck, ErrMsgMsg, MktDepthExchangesMsg},
         Request, Response,
     },
 };
@@ -281,6 +281,26 @@ impl AsyncClient {
                     _ => None,
                 }
             }))
+    }
+
+    #[instrument(skip(self))]
+    pub async fn request_market_depth_exchanges(
+        &self,
+        message: ReqMktDepthExchanges,
+    ) -> Result<MktDepthExchangesMsg, Error> {
+        self.send(Request::ReqMktDepthExchanges(message)).await?;
+
+        Box::pin(self
+            .response_stream()
+            .filter_map(|response| async move {
+                match response {
+                    Response::MktDepthExchangesMsg(msg) => Some(msg),
+                    _ => None,
+                }
+            }))
+            .next()
+            .await
+            .ok_or(Error::ResponseChannelClosed)
     }
 }
 

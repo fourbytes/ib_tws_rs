@@ -252,6 +252,7 @@ impl Context {
         }
     }
 
+    #[instrument(skip(self, buf), err)]
     pub fn decode_message(&mut self, buf: &mut BytesMut) -> Result<Response, io::Error> {
         let (response, _id) = self.parse_message(buf)?;
         Ok(response)

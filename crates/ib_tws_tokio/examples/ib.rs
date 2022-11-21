@@ -41,6 +41,8 @@ async fn main() -> miette::Result<()> {
     client.send(stock_request).await.into_diagnostic()?;
     let response = client.request_contract_details(ReqContractDetails::new(apple)).await?;
     info!(?response);
+    let response = client.request_market_depth_exchanges(ReqMktDepthExchanges {  }).await?;
+    info!(?response);
     client.response_stream()
         .for_each(move |buf| async move {
             match buf {
