@@ -1,16 +1,21 @@
 use std::{io, sync::atomic::{AtomicI32, Ordering}};
 
+use flume::SendError;
 use futures::{
     channel::mpsc,
-    Future, Sink, SinkExt, Stream, StreamExt,
+    Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt,
 };
 
-use crate::message::{request::StartApi, Request, Response};
+use crate::message::{request::{StartApi, Handshake}, Request, Response, constants::{MIN_VERSION, MAX_VERSION}};
 
 #[derive(Debug, thiserror::Error, miette::Diagnostic)]
 pub enum Error {
     #[error("request channel closed")]
-    RequestChannelClosed
+    RequestChannelClosed,
+    #[error("response channel closed")]
+    ResponseChannelClosed,
+    #[error("transport io error: {0}")]
+    TransportIo(#[from] io::Error)
 }
 
 pub trait RequestSink = Sink<Request>;
@@ -35,14 +40,28 @@ pub struct AsyncClient {
 
 async fn request_forwarder<S: Sink<Request>>(
     mut request_rx: mpsc::UnboundedReceiver<Request>,
-    transport_rx: S,
+    transport_tx: S,
 ) -> Result<(), S::Error>
 where
     S::Error: Send,
 {
+    let mut transport_tx = Box::pin(transport_tx);
+    while let Some(message) = request_rx.next().await {
+        transport_tx.send(message).await?;
+    }
+    Ok(())
+}
+
+async fn response_forwarder<S: Stream<Item = Result<Response, io::Error>>, T>(
+    response_tx: flume::Sender<Response>,
+    transport_rx: S,
+) -> Result<(), Error>
+where
+    T: Send, SendError<T>: From<SendError<Request>>
+{
     let mut transport_rx = Box::pin(transport_rx);
-    while let Some(request) = request_rx.next().await {
-        transport_rx.send(request).await?;
+    while let Some(message) = transport_rx.try_next().await.map_err(Error::TransportIo)? {
+        response_tx.send_async(message).await.map_err(|_| Error::ResponseChannelClosed)?;
     }
     Ok(())
 }
@@ -62,32 +81,87 @@ impl AsyncClient {
         let _request_forwarder = T::spawn_task("request_forwarder", async move {
             request_forwarder(request_rx, transport_tx).await
         });
+        let _response_forwarder = T::spawn_task("response_forwarder", async move {
+            response_forwarder(response_tx, transport_rx).await
+        });
 
-        let mut client = Self {
+        let client = Self {
             request_tx,
             response_rx,
             request_id: AtomicI32::new(0)
         };
         // client.handshake().await?;
-        client
-            .send(Request::StartApi(StartApi {
-                client_id,
-                optional_capabilities: "".to_string(),
-            }))
-            .await?;
-
+        //
+        let handshake_ack = client.handshake().await?;
+        info!(?handshake_ack);
+        {
+            let mut stream = Box::pin(client.request_start_api(client_id).await?);
+            while let Some(response) = stream.next().await {
+                info!(?response);
+            }
+        }
+        
         Ok(client)
     }
 
-    pub async fn send(&mut self, mut request: Request) -> Result<(), Error> {
+    pub async fn send(&self, mut request: Request) -> Result<i32, Error> {
         let request_id = self.request_id.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |request_id| {
             Some(request_id + 1)
         }).unwrap();
         request.set_request_id(request_id);
         info!(?request, "sending message");
 
-        self.request_tx.send(request).await
-            .map_err(|_error| Error::RequestChannelClosed)
+        self.request_tx.clone().send(request).await
+            .map_err(|_error| Error::RequestChannelClosed)?;
+
+        Ok(request_id)
+    }
+
+    /// Get a cloned receiver for the response channel.
+    pub fn response_rx(&self) -> flume::Receiver<Response> {
+        self.response_rx.clone()
+    }
+
+    fn stream_by_request_id(&self, request_id: Option<i32>) -> impl Stream<Item = Response> + '_ {
+        self.response_rx.stream()
+            .filter(move |response| {
+                let response_request_id = response.request_id();
+                async move {
+                    response_request_id == request_id
+                }
+            })
+    }
+
+    async fn request_start_api(&self, client_id: i32) -> Result<impl Stream<Item = Response> + '_, Error> {
+        debug!("requesting start api");
+        self
+            .send(Request::StartApi(StartApi {
+                client_id,
+                optional_capabilities: "".to_string(),
+            }))
+            .await?;
+
+        Ok(self.response_rx.stream())
+    }
+
+    async fn handshake(&self) -> Result<Response, Error> {
+        debug!("performing handshake");
+        self
+            .send(Request::Handshake(Handshake {
+                min_version: MIN_VERSION,
+                max_version: MAX_VERSION,
+                option: None
+            }))
+            .await?;
+
+        let mut stream = Box::pin(self.response_rx.stream().filter(|response| {
+            // FIXME: Would rather avoid this clone.
+            let response = response.clone();
+            async move {
+                matches!(response, Response::HandshakeAck(_))
+            }
+        }));
+        stream.next().await.ok_or(Error::ResponseChannelClosed)
     }
 }
 

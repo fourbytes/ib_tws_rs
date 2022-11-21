@@ -83,7 +83,7 @@ pub enum Request {
 impl Request {
     pub(crate) fn set_request_id(&mut self, request_id: i32) {
         match self {
-            Self::StartApi(_) => (),
+            Self::StartApi(_) | Self::Handshake(_) => (),
             _ => todo!()
         }
     }
