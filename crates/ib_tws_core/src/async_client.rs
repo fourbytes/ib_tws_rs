@@ -6,15 +6,15 @@ use std::{
     },
 };
 
-use flume::SendError;
+use async_broadcast::SendError;
 use futures::{channel::mpsc, lock::Mutex, Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
 
 use crate::{
-    domain::{Contract, ContractDetails},
+    domain::ContractDetails,
     message::{
         constants::{MAX_VERSION, MIN_VERSION},
         request::{Handshake, ReqAccountSummary, ReqContractDetails, StartApi},
-        response::{AccountSummaryMsg, HandshakeAck},
+        response::{AccountSummaryMsg, HandshakeAck, ErrMsgMsg},
         Request, Response,
     },
 };
@@ -27,6 +27,8 @@ pub enum Error {
     ResponseChannelClosed,
     #[error("transport io error: {0}")]
     TransportIo(#[from] io::Error),
+    #[error("api error: {0:?}")]
+    ApiError(ErrMsgMsg),
 }
 
 // pub trait RequestSink = Sink<Request>;
@@ -35,7 +37,7 @@ pub enum Error {
 #[derive(Debug)]
 pub struct AsyncClient {
     request_tx: mpsc::UnboundedSender<Request>,
-    response_rx: flume::Receiver<Response>,
+    response_rx: async_broadcast::Receiver<Response>,
 
     request_id: AtomicI32,
     managed_accounts: Arc<Mutex<Vec<String>>>,
@@ -58,7 +60,7 @@ where
 }
 
 async fn response_forwarder<S: Stream<Item = Result<Response, io::Error>>, T>(
-    response_tx: flume::Sender<Response>,
+    response_tx: async_broadcast::Sender<Response>,
     transport_rx: S,
 ) -> Result<(), Error>
 where
@@ -68,7 +70,7 @@ where
     let mut transport_rx = Box::pin(transport_rx);
     while let Some(message) = transport_rx.try_next().await.map_err(Error::TransportIo)? {
         response_tx
-            .send_async(message)
+            .broadcast(message)
             .await
             .map_err(|_| Error::ResponseChannelClosed)?;
     }
@@ -88,7 +90,7 @@ impl AsyncClient {
 
         let (transport_tx, transport_rx) = transport.split();
         let (request_tx, request_rx) = mpsc::unbounded();
-        let (response_tx, response_rx) = flume::unbounded();
+        let (response_tx, response_rx) = async_broadcast::broadcast(1000);
 
         let _request_forwarder = T::spawn_task("request_forwarder", async move {
             request_forwarder(request_rx, transport_tx).await
@@ -135,17 +137,15 @@ impl AsyncClient {
     }
 
     /// Get a cloned receiver for the response channel.
-    pub fn response_rx(&self) -> flume::Receiver<Response> {
+    pub fn response_stream(&self) -> async_broadcast::Receiver<Response> {
         self.response_rx.clone()
     }
 
-    fn stream_by_request_id(&self, request_id: Option<i32>) -> impl Stream<Item = Response> + '_ {
-        self.response_rx
-            .clone()
-            .into_stream()
+    fn response_stream_by_id(&self, id: Option<i32>) -> impl Stream<Item = Response> + '_ {
+        self.response_stream()
             .filter(move |response| {
                 let response_request_id = response.request_id();
-                async move { response_request_id == request_id }
+                async move { response_request_id == id }
             })
     }
 
@@ -160,14 +160,14 @@ impl AsyncClient {
 
         let (managed_accts_msg, next_valid_id_msg) = {
             let mut managed_accts_stream =
-                Box::pin(self.response_rx.stream().filter_map(|response| async move {
+                Box::pin(self.response_stream().filter_map(|response| async move {
                     match response {
                         Response::ManagedAcctsMsg(msg) => Some(msg),
                         _ => None,
                     }
                 }));
             let mut next_valid_id_stream =
-                Box::pin(self.response_rx.stream().filter_map(|response| async move {
+                Box::pin(self.response_stream().filter_map(|response| async move {
                     match response {
                         Response::NextValidIdMsg(msg) => Some(msg),
                         _ => None,
@@ -209,7 +209,7 @@ impl AsyncClient {
         }))
         .await?;
 
-        let mut stream = Box::pin(self.response_rx.stream().filter_map(|response| async move {
+        let mut stream = Box::pin(self.response_rx.clone().filter_map(|response| async move {
             match response {
                 Response::HandshakeAck(ack) => Some(ack),
                 _ => None,
@@ -238,25 +238,28 @@ impl AsyncClient {
         &self,
         message: ReqContractDetails,
     ) -> Result<ContractDetails, Error> {
-        debug!("requesting account summary");
         let request_id = self.send(Request::ReqContractDetails(message)).await?;
 
-        Ok(Box::pin(
-            self.stream_by_request_id(Some(request_id))
+        Box::pin(
+            self.response_stream_by_id(Some(request_id))
                 .take_while(|response| {
                     let is_end = matches!(response, Response::ContractDataEndMsg(_));
                     async move { !is_end }
                 })
                 .filter_map(|response| async move {
                     match response {
-                        Response::ContractDataMsg(msg) => Some(msg.contract_details),
-                        _ => None,
+                        Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
+                        Response::ContractDataMsg(msg) => Some(Ok(msg.contract_details)),
+                        _ => {
+                            warn!(?response, "unexpected response for request id");
+                            None
+                        },
                     }
                 }),
         )
         .next()
         .await
-        .unwrap())
+        .unwrap()
     }
 
     #[instrument(skip(self))]
@@ -264,11 +267,10 @@ impl AsyncClient {
         &self,
         message: ReqAccountSummary,
     ) -> Result<impl Stream<Item = AccountSummaryMsg> + '_, Error> {
-        debug!("requesting account summary");
         let request_id = self.send(Request::ReqAccountSummary(message)).await?;
 
         Ok(self
-            .stream_by_request_id(Some(request_id))
+            .response_stream_by_id(Some(request_id))
             .take_while(|response| {
                 let is_end = matches!(response, Response::AccountSummaryEndMsg(_));
                 async move { !is_end }
