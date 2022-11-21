@@ -20,6 +20,8 @@ tracing = "0.1"
 tokio-util = { version = "0.7", features = ["codec"] }
 
 bytes = "1"
+# thiserror = "1"
+# miette = "5"
 
 [dev-dependencies]
 miette = { version = "5", features = ["fancy"] }

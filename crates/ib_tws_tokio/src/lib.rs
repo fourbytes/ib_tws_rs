@@ -11,3 +11,9 @@ pub mod task;
 
 pub mod transport;
 pub use transport::Transport;
+
+// #[derive(Debug, thiserror::Error, miette::Diagnostic)]
+// pub enum Error {
+//     #[error("io error: {0}")]
+//     Io(#[from] std::io::Error),
+// }

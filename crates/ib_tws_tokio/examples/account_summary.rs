@@ -1,15 +1,10 @@
 #[macro_use]
 extern crate tracing;
 
-use std::net::SocketAddr;
-use std::string::ToString;
 use std::time::Duration;
 
-use futures::{SinkExt, StreamExt};
-use ib_tws_core::domain;
-use ib_tws_core::domain::contract::Contract;
-use ib_tws_core::message::{request::*, Response};
-use ib_tws_tokio::Builder;
+use futures::StreamExt;
+use ib_tws_core::message::request::ReqAccountSummary;
 use miette::IntoDiagnostic;
 
 #[tokio::main]
@@ -25,9 +20,13 @@ async fn main() -> miette::Result<()> {
         ib_tws_core::AsyncClient::setup(transport, 0).await?
     };
 
-    // info!(version = client.server_version);
-    // let response = client.req_account_summary(req).await;
-    // info!(?response);
+    info!(version = client.server_version());
+    for account in client.managed_accounts().await {
+        let mut stream = Box::pin(client.request_account_summary(ReqAccountSummary::new("All".to_owned(), "$LEDGER:ALL".to_owned())).await?);
+        while let Some(response) = stream.next().await {
+            info!(?response);
+        }
+    }
 
     Ok(())
 }

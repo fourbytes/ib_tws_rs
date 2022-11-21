@@ -84,6 +84,7 @@ impl Request {
     pub(crate) fn set_request_id(&mut self, request_id: i32) {
         match self {
             Self::StartApi(_) | Self::Handshake(_) => (),
+            Self::ReqAccountSummary(msg) => msg.req_id = request_id,
             _ => todo!()
         }
     }
@@ -421,9 +422,19 @@ pub struct ReqAccountUpdatesMulti {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ReqAccountSummary {
-    pub req_id: i32,
+    pub(crate) req_id: i32,
     pub group: String,
     pub tags: String,
+}
+
+impl ReqAccountSummary {
+    pub fn new(group: String, tags: String) -> Self {
+        Self {
+            req_id: 0,
+            group,
+            tags,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
