@@ -1,9 +1,9 @@
-use std::{io, sync::atomic::{AtomicI32, Ordering}};
+use std::{io, sync::{atomic::{AtomicI32, Ordering}, Arc}};
 
 use flume::SendError;
 use futures::{
     channel::mpsc,
-    Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt,
+    Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt, lock::Mutex,
 };
 
 use crate::message::{request::{StartApi, Handshake}, Request, Response, constants::{MIN_VERSION, MAX_VERSION}};
@@ -35,7 +35,10 @@ pub enum ErrorKind {
 pub struct AsyncClient {
     request_tx: mpsc::UnboundedSender<Request>,
     response_rx: flume::Receiver<Response>,
-    request_id: AtomicI32
+
+    request_id: AtomicI32,
+    managed_accounts: Arc<Mutex<Vec<String>>>,
+    next_valid_order_id: AtomicI32,
 }
 
 async fn request_forwarder<S: Sink<Request>>(
@@ -88,18 +91,13 @@ impl AsyncClient {
         let client = Self {
             request_tx,
             response_rx,
-            request_id: AtomicI32::new(0)
+            request_id: AtomicI32::new(0),
+            managed_accounts: Arc::default(),
+            next_valid_order_id: AtomicI32::new(0),
         };
-        // client.handshake().await?;
-        //
         let handshake_ack = client.handshake().await?;
         info!(?handshake_ack);
-        {
-            let mut stream = Box::pin(client.request_start_api(client_id).await?);
-            while let Some(response) = stream.next().await {
-                info!(?response);
-            }
-        }
+        client.start_api(client_id).await?;
         
         Ok(client)
     }
@@ -132,7 +130,8 @@ impl AsyncClient {
             })
     }
 
-    async fn request_start_api(&self, client_id: i32) -> Result<impl Stream<Item = Response> + '_, Error> {
+    #[instrument(skip(self))]
+    async fn start_api(&self, client_id: i32) -> Result<(), Error> {
         debug!("requesting start api");
         self
             .send(Request::StartApi(StartApi {
@@ -141,7 +140,40 @@ impl AsyncClient {
             }))
             .await?;
 
-        Ok(self.response_rx.stream())
+        let (managed_accts_msg, next_valid_id_msg) = {
+            let mut managed_accts_stream = Box::pin(self.response_rx.stream().filter_map(|response| {
+                async move {
+                    match response {
+                        Response::ManagedAcctsMsg(msg) => Some(msg),
+                        _ => None,
+                    }
+                }
+            }));
+            let mut next_valid_id_stream = Box::pin(self.response_rx.stream().filter_map(|response| {
+                async move {
+                    match response {
+                        Response::NextValidIdMsg(msg) => Some(msg),
+                        _ => None,
+                    }
+                }
+            }));
+            futures::join!(managed_accts_stream.next(), next_valid_id_stream.next())
+        };
+
+        let (managed_accts_msg, next_valid_id_msg) = (managed_accts_msg.ok_or(Error::ResponseChannelClosed)?, next_valid_id_msg.ok_or(Error::ResponseChannelClosed)?);
+        {
+            let accounts = managed_accts_msg.accounts.split(',').map(String::from).collect();
+            info!(?accounts, "updating managed accounts");
+            *self.managed_accounts.lock().await = accounts;
+        }
+
+        {
+            let order_id = next_valid_id_msg.order_id;
+            info!(?order_id, "updating next valid id");
+            self.next_valid_order_id.swap(order_id, Ordering::Relaxed);
+        }
+
+        Ok(())
     }
 
     async fn handshake(&self) -> Result<Response, Error> {

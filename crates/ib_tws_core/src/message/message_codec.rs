@@ -79,7 +79,7 @@ impl Decoder for MessageCodec {
     #[instrument(err)]
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         if src.is_empty() {
-            trace!("decoding empty message");
+            //trace!("decoding empty message");
             return Ok(None)
         }
         // info!("decoding");
