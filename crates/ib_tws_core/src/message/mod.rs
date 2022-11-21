@@ -6,12 +6,17 @@ pub use self::response::Response;
 mod account;
 mod auth;
 mod bulletins;
+
+// TODO: Merge this with AsyncClient
+#[cfg(feature = "async")]
 mod commander;
+#[cfg(feature = "async")]
+mod dispatcher;
+
 pub mod constants;
 pub mod context;
 mod contract;
 mod depth_exchange;
-mod dispatcher;
 mod display_group;
 mod err_msg;
 mod error;
