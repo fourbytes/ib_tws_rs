@@ -85,7 +85,7 @@ impl Request {
         match self {
             Self::StartApi(_) | Self::Handshake(_) => (),
             Self::ReqAccountSummary(msg) => msg.req_id = request_id,
-            _ => todo!()
+            _ => todo!(),
         }
     }
 }

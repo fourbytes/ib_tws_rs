@@ -1,14 +1,14 @@
 use std::io;
 use std::ops::Drop;
 use std::pin::Pin;
-use std::task::{Poll, Context};
+use std::task::{Context, Poll};
 
-use futures::{Future, Sink, SinkExt, StreamExt, TryStreamExt, ready};
-
-use crate::FramedStream;
-use ib_tws_core::TransportChannel;
+use futures::{ready, Future, Sink, SinkExt, StreamExt, TryStreamExt};
 use ib_tws_core::message::request::*;
 use ib_tws_core::message::response::*;
+use ib_tws_core::TransportChannel;
+
+use crate::FramedStream;
 
 #[derive(Debug)]
 pub struct TwsTask {
@@ -28,10 +28,12 @@ impl TwsTask {
                 Some(r) => r,
                 None => {
                     return Poll::Ready(Err(()));
-                },
+                }
             };
 
-            Pin::new(&mut self.stream).start_send(request).map_err(|_| ())?;
+            Pin::new(&mut self.stream)
+                .start_send(request)
+                .map_err(|_| ())?;
             ready!(self.stream.poll_flush_unpin(cx));
         }
     }
@@ -49,7 +51,7 @@ impl TwsTask {
             let result = self.channel.unbounded_send(item).map_err(|_| ())?;
 
             if self.exiting {
-                return Poll::Ready(Ok(()))
+                return Poll::Ready(Ok(()));
             }
         }
     }
@@ -70,8 +72,8 @@ impl Future for TwsTask {
                 Poll::Ready(Err(())) => {
                     // no more requests will be enqueued
                     self.exiting = true;
-                },
-                Poll::Pending => ()
+                }
+                Poll::Pending => (),
             }
         }
 
@@ -83,16 +85,10 @@ impl Future for TwsTask {
                 trace!("task done");
                 Poll::Ready(Ok(()))
             }
-            (Poll::Ready(Ok(())), Poll::Ready(Ok(()))) => {
-                Poll::Pending
-            }
+            (Poll::Ready(Ok(())), Poll::Ready(Ok(()))) => Poll::Pending,
             (Poll::Ready(Ok(())), _) => panic!("outstanding requests, but response channel closed"),
-            (_, Poll::Ready(Ok(()))) if self.exiting => {
-                Poll::Pending
-            }
-            _ => {
-                Poll::Pending
-            }
+            (_, Poll::Ready(Ok(()))) if self.exiting => Poll::Pending,
+            _ => Poll::Pending,
         }
     }
 }

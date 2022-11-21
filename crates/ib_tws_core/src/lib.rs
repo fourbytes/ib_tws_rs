@@ -3,11 +3,11 @@
 #[macro_use]
 extern crate tracing;
 
+pub mod channel;
 pub mod domain;
 pub mod message;
-pub mod channel;
 // pub use codec::{Decoder, Encoder};
-pub use channel::{TransportChannel, CommandChannel, channel4};
+pub use channel::{channel4, CommandChannel, TransportChannel};
 
 pub mod async_client;
 pub use async_client::AsyncClient;

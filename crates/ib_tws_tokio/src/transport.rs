@@ -1,8 +1,17 @@
-use std::{time::Duration, io, net::SocketAddr, pin::Pin, task::{Poll, Context}};
+use std::{
+    io,
+    net::SocketAddr,
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
+};
 
-use futures::{channel::mpsc, Sink, Stream, SinkExt, StreamExt, Future};
-use ib_tws_core::{message::{MessageCodec, Request, Response}, async_client::SpawnTask};
-use tokio::{net::TcpStream, io::AsyncWriteExt};
+use futures::{channel::mpsc, Future, Sink, SinkExt, Stream, StreamExt};
+use ib_tws_core::{
+    async_client::SpawnTask,
+    message::{MessageCodec, Request, Response},
+};
+use tokio::{io::AsyncWriteExt, net::TcpStream};
 use tokio_util::codec::Framed;
 
 use crate::FramedStream;
@@ -65,10 +74,12 @@ impl Sink<Request> for Transport {
 impl SpawnTask for Transport {
     type JoinHandle<T> = tokio::task::JoinHandle<T>;
 
-    fn spawn_task<F, T>(name: &str, future: F) -> Self::JoinHandle<T> where F: Future<Output = T> + Send + 'static, T: Send + 'static {
+    fn spawn_task<F, T>(name: &str, future: F) -> Self::JoinHandle<T>
+    where
+        F: Future<Output = T> + Send + 'static,
+        T: Send + 'static,
+    {
         info!(%name, "spawning task");
         tokio::task::spawn(future)
     }
-
-
 }

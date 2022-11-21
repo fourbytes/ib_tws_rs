@@ -5,7 +5,7 @@ pub mod client;
 pub use client::Client;
 
 pub mod builder;
-pub use builder::{FramedStream, Builder};
+pub use builder::{Builder, FramedStream};
 
 pub mod task;
 

@@ -11,8 +11,9 @@ use futures::{channel::mpsc, lock::Mutex, Future, Sink, SinkExt, Stream, StreamE
 
 use crate::message::{
     constants::{MAX_VERSION, MIN_VERSION},
-    request::{Handshake, StartApi, ReqAccountSummary},
-    Request, Response, response::{HandshakeAck, AccountSummaryMsg},
+    request::{Handshake, ReqAccountSummary, StartApi},
+    response::{AccountSummaryMsg, HandshakeAck},
+    Request, Response,
 };
 
 #[derive(Debug, thiserror::Error, miette::Diagnostic)]
@@ -205,7 +206,8 @@ impl AsyncClient {
         }));
         let handshake_ack = stream.next().await.ok_or(Error::ResponseChannelClosed)?;
         debug!(?handshake_ack, "received handshake ack");
-        self.server_version.store(handshake_ack.server_version, Ordering::Relaxed);
+        self.server_version
+            .store(handshake_ack.server_version, Ordering::Relaxed);
         Ok(handshake_ack)
     }
 
@@ -222,21 +224,25 @@ impl AsyncClient {
     }
 
     #[instrument(skip(self))]
-    pub async fn request_account_summary(&self, message: ReqAccountSummary) -> Result<impl Stream<Item = AccountSummaryMsg> + '_, Error> {
+    pub async fn request_account_summary(
+        &self,
+        message: ReqAccountSummary,
+    ) -> Result<impl Stream<Item = AccountSummaryMsg> + '_, Error> {
         debug!("requesting account summary");
         let request_id = self.send(Request::ReqAccountSummary(message)).await?;
 
-        Ok(self.stream_by_request_id(Some(request_id))
+        Ok(self
+            .stream_by_request_id(Some(request_id))
             .take_while(|response| {
                 let is_end = matches!(response, Response::AccountSummaryEndMsg(_));
                 async move { !is_end }
             })
             .filter_map(|response| async move {
-            match response {
-                Response::AccountSummaryMsg(msg) => Some(msg),
-                _ => None,
-            }
-        }))
+                match response {
+                    Response::AccountSummaryMsg(msg) => Some(msg),
+                    _ => None,
+                }
+            }))
     }
 }
 

@@ -1,13 +1,13 @@
+use std::ops::Drop;
 use std::pin::Pin;
 use std::task::Poll;
-use std::ops::Drop;
 
-use futures::{Sink, SinkExt};
 use futures::channel::mpsc;
+use futures::{Sink, SinkExt};
 use futures::{Stream, StreamExt};
-use ib_tws_core::CommandChannel;
-use ib_tws_core::message::response::*;
 use ib_tws_core::message::request::*;
+use ib_tws_core::message::response::*;
+use ib_tws_core::CommandChannel;
 
 #[derive(Debug)]
 pub struct Client {
@@ -26,7 +26,10 @@ impl Client {
 impl Stream for Client {
     type Item = Response;
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<Option<Self::Item>> {
         self.channel.rx.poll_next_unpin(cx)
     }
 }
@@ -38,15 +41,24 @@ impl Sink<Request> for Client {
         self.channel.tx.start_send(item)
     }
 
-    fn poll_ready(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
         self.channel.tx.poll_ready_unpin(cx)
     }
 
-    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_flush(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
         self.channel.tx.poll_flush_unpin(cx)
     }
 
-    fn poll_close(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_close(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
         self.channel.tx.poll_close_unpin(cx)
     }
 }

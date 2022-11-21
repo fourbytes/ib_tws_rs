@@ -4,10 +4,10 @@ extern crate tracing;
 use std::net::SocketAddr;
 use std::string::ToString;
 
-use futures::{StreamExt, SinkExt};
-use ib_tws_tokio::Builder;
+use futures::{SinkExt, StreamExt};
 use ib_tws_core::domain;
 use ib_tws_core::message::{request::*, Response};
+use ib_tws_tokio::Builder;
 use miette::IntoDiagnostic;
 
 #[tokio::main]
@@ -38,19 +38,19 @@ async fn main() -> miette::Result<()> {
         mkt_data_options: Vec::new(),
     });
 
-    let client = Builder::new(0)
-        .connect(addr, 1)
-        .await.into_diagnostic()?;
+    let client = Builder::new(0).connect(addr, 1).await.into_diagnostic()?;
     info!(version = client.server_version);
 
     let (mut sink, stream) = client.split();
     sink.send(stock_request).await.into_diagnostic()?;
     sink.send(forex_request).await.into_diagnostic()?;
-    stream.for_each(move |buf| async move {
-        match buf {
-            Response::ErrMsgMsg(msg) => warn!("{:#?}", msg),
-            buf => info!("buf: {:?}", buf),
-        }
-    }).await;
+    stream
+        .for_each(move |buf| async move {
+            match buf {
+                Response::ErrMsgMsg(msg) => warn!("{:#?}", msg),
+                buf => info!("buf: {:?}", buf),
+            }
+        })
+        .await;
     Ok(())
 }
