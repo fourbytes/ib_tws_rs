@@ -45,7 +45,7 @@ pub fn decode_display_group_list_msg(
 pub fn encode_subscribe_to_group_event(
     _ctx: &mut Context,
     buf: &mut BytesMut,
-    req: &SubscribeToGroupEvent,
+    req: &SubscribeToGroupEvents,
 ) -> Result<DispatchId, EncodeError> {
     const VERSION: i32 = 1;
 

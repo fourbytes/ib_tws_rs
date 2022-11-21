@@ -138,7 +138,7 @@ impl Context {
             Request::PlaceOrder(ref req) => encode_place_order(self, &mut buf, req),
             Request::ReqAccountUpdates(ref req) => encode_req_account_updates(self, &mut buf, req),
             Request::ReqExecutions(ref req) => encode_req_executions(self, &mut buf, req),
-            Request::CacelOrder(ref req) => encode_cancel_order(self, &mut buf, req),
+            Request::CancelOrder(ref req) => encode_cancel_order(self, &mut buf, req),
             Request::ReqOpenOrders(ref req) => encode_req_open_orders(self, &mut buf, req),
             Request::ReqIds(ref req) => encode_req_ids(self, &mut buf, req),
             Request::ReqNewsBulletins(ref req) => encode_req_news_bulletins(self, &mut buf, req),
@@ -205,13 +205,13 @@ impl Context {
             Request::QueryDisplayGroups(ref req) => {
                 encode_query_display_groups(self, &mut buf, req)
             }
-            Request::SubscribeToGroupEvent(ref req) => {
+            Request::SubscribeToGroupEvents(ref req) => {
                 encode_subscribe_to_group_event(self, &mut buf, req)
             }
             Request::UpdateDisplayGroup(ref req) => {
                 encode_update_display_group(self, &mut buf, req)
             }
-            Request::UbsubscribeFromGroupEvents(ref req) => {
+            Request::UnsubscribeFromGroupEvents(ref req) => {
                 encode_unsubscribe_from_group_events(self, &mut buf, req)
             }
             Request::MatchingSymbol(ref req) => encode_matching_symbol(self, &mut buf, req),

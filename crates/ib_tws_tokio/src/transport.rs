@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use futures::{channel::mpsc, Future, Sink, SinkExt, Stream, StreamExt};
+use futures::{Future, Sink, SinkExt, Stream, StreamExt};
 use ib_tws_core::{
     async_client::SpawnTask,
     message::{MessageCodec, Request, Response},
@@ -14,11 +14,10 @@ use ib_tws_core::{
 use tokio::{io::AsyncWriteExt, net::TcpStream};
 use tokio_util::codec::Framed;
 
-use crate::FramedStream;
+pub type FramedStream = Framed<TcpStream, MessageCodec>;
 
 pub struct Transport {
     framed_stream: FramedStream,
-    timeout_duration: Duration,
 }
 
 impl Transport {
@@ -38,7 +37,6 @@ impl Transport {
 
         Ok(Transport {
             framed_stream,
-            timeout_duration,
         })
     }
 }
