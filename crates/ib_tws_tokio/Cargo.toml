@@ -1,9 +1,8 @@
 [package]
 name = "ib_tws_tokio"
 description = "An Interactive Broker's TWS API client for Tokio"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 edition = "2021"
-readme = "../../README.md"
 keywords = ["finance", "library", "interactive-brokers"]
 categories = ["api-bindings"]
 license = "LGPL-3.0-only"
