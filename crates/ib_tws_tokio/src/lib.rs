@@ -1,5 +1,10 @@
+#![warn(clippy::pedantic)]
+
 #[macro_use]
 extern crate tracing;
 
-pub mod transport;
+mod transport;
 pub use transport::Transport;
+
+mod codec;
+pub use codec::Codec;

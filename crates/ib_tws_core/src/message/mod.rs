@@ -1,4 +1,3 @@
-pub use self::message_codec::MessageCodec;
 pub use self::request::Request;
 pub use self::response::Response;
 
@@ -9,7 +8,7 @@ mod auth;
 mod bulletins;
 mod commander;
 pub mod constants;
-mod context;
+pub mod context;
 mod contract;
 mod depth_exchange;
 mod dispatcher;

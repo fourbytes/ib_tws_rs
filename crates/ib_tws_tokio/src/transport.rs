@@ -6,21 +6,25 @@ use std::{
     time::Duration,
 };
 
-use futures::{Future, Sink, SinkExt, Stream, StreamExt};
+use futures::{Future, Sink, Stream, StreamExt, SinkExt};
 use ib_tws_core::{
     async_client::SpawnTask,
-    message::{MessageCodec, Request, Response},
+    message::{Request, Response},
 };
 use tokio::{io::AsyncWriteExt, net::TcpStream};
 use tokio_util::codec::Framed;
 
-pub type FramedStream = Framed<TcpStream, MessageCodec>;
+use crate::Codec;
+
+pub type FramedStream = Framed<TcpStream, Codec>;
 
 pub struct Transport {
     framed_stream: FramedStream,
 }
 
 impl Transport {
+    /// # Errors
+    /// Returns a `std::io::Error` upon timeout or TCP connection failure.
     pub async fn connect(
         addr: SocketAddr,
         timeout_duration: Duration,
@@ -33,7 +37,7 @@ impl Transport {
             .await
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "write API head error"))??;
 
-        let framed_stream = Framed::new(stream, MessageCodec::new());
+        let framed_stream = Framed::new(stream, Codec::default());
 
         Ok(Transport {
             framed_stream,
