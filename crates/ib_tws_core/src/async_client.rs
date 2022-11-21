@@ -26,8 +26,8 @@ pub enum Error {
     TransportIo(#[from] io::Error),
 }
 
-pub trait RequestSink = Sink<Request>;
-pub trait ResponseStream = Stream<Item = Result<Response, io::Error>>;
+// pub trait RequestSink = Sink<Request>;
+// pub trait ResponseStream = Stream<Item = Result<Response, io::Error>>;
 
 #[derive(Debug)]
 pub struct AsyncClient {
@@ -76,7 +76,7 @@ impl AsyncClient {
     /// Setup a new client with a specified transport.
     pub async fn setup<T>(transport: T, client_id: i32) -> Result<Self, Error>
     where
-        T: RequestSink + ResponseStream + SpawnTask + Send + 'static,
+        T: Sink<Request> + Stream<Item = Result<Response, io::Error>> + SpawnTask + Send + 'static,
         <T as Sink<Request>>::Error: std::marker::Send,
     {
         info!("setting up client");
@@ -100,7 +100,7 @@ impl AsyncClient {
             next_valid_order_id: AtomicI32::new(0),
             server_version: AtomicI32::new(0),
         };
-        let handshake_ack = client.handshake().await?;
+        let _handshake_ack = client.handshake().await?;
 
         client.start_api(client_id).await?;
 
