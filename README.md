@@ -5,12 +5,8 @@
 ### Tokio
 ```rust
 let client = {
-	let port = std::env::args()
-		.nth(1)
-		.and_then(|p| p.parse::<u32>().ok())
-		.unwrap_or(4001);
 	let transport = ib_tws_tokio::Transport::connect(
-		format!("127.0.0.1:{port}").parse().unwrap(),
+		"127.0.0.1:4001".parse().unwrap(),
 		Duration::from_secs(5),
 	)
 	.await
