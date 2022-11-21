@@ -9,8 +9,7 @@ let client = {
 		"127.0.0.1:4001".parse().unwrap(),
 		Duration::from_secs(5),
 	)
-	.await
-	.into_diagnostic()?;
+	.await?;
 	ib_tws_core::AsyncClient::setup(transport, 0).await?
 };
 info!(version = client.server_version(), "connected to client");
