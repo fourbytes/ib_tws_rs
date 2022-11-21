@@ -1,15 +1,17 @@
-use std::io;
+use std::{io, sync::atomic::{AtomicI32, Ordering}};
 
 use futures::{
     channel::mpsc,
-    task::{Spawn, SpawnExt},
     Future, Sink, SinkExt, Stream, StreamExt,
 };
 
 use crate::message::{request::StartApi, Request, Response};
 
 #[derive(Debug, thiserror::Error, miette::Diagnostic)]
-pub enum Error {}
+pub enum Error {
+    #[error("request channel closed")]
+    RequestChannelClosed
+}
 
 pub trait RequestSink = Sink<Request>;
 pub trait ResponseStream = Stream<Item = Result<Response, io::Error>>;
@@ -27,7 +29,8 @@ pub enum ErrorKind {
 
 pub struct AsyncClient {
     request_tx: mpsc::UnboundedSender<Request>,
-    response_rx: mpsc::UnboundedReceiver<Response>,
+    response_rx: flume::Receiver<Response>,
+    request_id: AtomicI32
 }
 
 async fn request_forwarder<S: Sink<Request>>(
@@ -54,7 +57,7 @@ impl AsyncClient {
 
         let (transport_tx, transport_rx) = transport.split();
         let (request_tx, request_rx) = mpsc::unbounded();
-        let (response_tx, response_rx) = mpsc::unbounded();
+        let (response_tx, response_rx) = flume::unbounded();
 
         let _request_forwarder = T::spawn_task("request_forwarder", async move {
             request_forwarder(request_rx, transport_tx).await
@@ -63,6 +66,7 @@ impl AsyncClient {
         let mut client = Self {
             request_tx,
             response_rx,
+            request_id: AtomicI32::new(0)
         };
         // client.handshake().await?;
         client
@@ -70,14 +74,20 @@ impl AsyncClient {
                 client_id,
                 optional_capabilities: "".to_string(),
             }))
-            .await;
+            .await?;
 
         Ok(client)
     }
 
-    pub async fn send(&mut self, request: Request) {
+    pub async fn send(&mut self, mut request: Request) -> Result<(), Error> {
+        let request_id = self.request_id.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |request_id| {
+            Some(request_id + 1)
+        }).unwrap();
+        request.set_request_id(request_id);
         info!(?request, "sending message");
-        self.request_tx.send(request).await;
+
+        self.request_tx.send(request).await
+            .map_err(|_error| Error::RequestChannelClosed)
     }
 }
 

@@ -80,6 +80,15 @@ pub enum Request {
     CancelTickByTickData(CancelTickByTickData),
 }
 
+impl Request {
+    pub(crate) fn set_request_id(&mut self, request_id: i32) {
+        match self {
+            Self::StartApi(_) => (),
+            _ => todo!()
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct Handshake {

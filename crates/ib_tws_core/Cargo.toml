@@ -20,6 +20,7 @@ memchr = "2"
 
 futures = "0.3"
 tokio-util = { version = "0.7", features = ["codec"] }
+flume = "0.10"
 
 tracing = "0.1"
 
