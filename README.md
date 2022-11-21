@@ -21,12 +21,12 @@ info!(version = client.server_version(), "connected to client");
 ```
 
 ## Crates
-### [`ib_tws_core`](https://crates.io/crates/ib_tws_core)
+### [`ib_tws_core`](https://github.com/fourbytes/ib_tws_rs/tree/main/crates/ib_tws_core)
 [![crates.io](https://img.shields.io/crates/v/ib_tws_core?style=for-the-badge)](https://crates.io/crates/ib_tws_core) [![docs.rs](https://img.shields.io/badge/docs.rs-ib_tws_core-rs?style=for-the-badge)](https://docs.rs/ib_tws_core)
 
 Contains core components including messages and encoding/decoding utilities.
 
-### [`ib_tws_tokio`](https://crates.io/crates/ib_tws_tokio)
+### [`ib_tws_tokio`](https://github.com/fourbytes/ib_tws_rs/tree/main/crates/ib_tws_tokio)
 [![crates.io](https://img.shields.io/crates/v/ib_tws_tokio?style=for-the-badge)](https://crates.io/crates/ib_tws_core) [![docs.rs](https://img.shields.io/badge/docs.rs-ib_tws_tokio-rs?style=for-the-badge)](https://docs.rs/ib_tws_tokio)
 
 A client implementation using Tokio.
