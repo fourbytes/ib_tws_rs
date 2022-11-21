@@ -1,9 +1,9 @@
 use std::pin::Pin;
-use std::task::{Poll, Context};
+use std::task::{Context, Poll};
 
 use futures::channel::mpsc::{self, TrySendError};
-use futures::{StreamExt, SinkExt};
 use futures::{Sink, Stream};
+use futures::{SinkExt, StreamExt};
 
 #[derive(Debug)]
 pub struct CommandChannel<C, R> {
@@ -32,13 +32,13 @@ pub fn channel4<C, R>() -> (CommandChannel<C, R>, TransportChannel<C, R>) {
     (cc, tc)
 }
 
-impl<C,R> TransportChannel<C, R> {
+impl<C, R> TransportChannel<C, R> {
     pub fn unbounded_send(&self, msg: R) -> Result<(), TrySendError<R>> {
         self.tx.unbounded_send(msg)
     }
 }
 
-impl<C,R> CommandChannel<C, R> {
+impl<C, R> CommandChannel<C, R> {
     pub fn unbounded_send(&self, msg: C) -> Result<(), TrySendError<C>> {
         self.tx.unbounded_send(msg)
     }
@@ -54,7 +54,6 @@ impl<C, R> Stream for TransportChannel<C, R> {
 
 impl<C, R> Sink<R> for TransportChannel<C, R> {
     type Error = mpsc::SendError;
-
 
     fn start_send(mut self: Pin<&mut Self>, item: R) -> Result<(), Self::Error> {
         self.tx.start_send(item)

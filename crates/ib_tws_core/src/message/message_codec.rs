@@ -79,8 +79,8 @@ impl Decoder for MessageCodec {
     #[instrument(err)]
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         if src.is_empty() {
-            trace!("decoding empty message");
-            return Ok(None)
+            //trace!("decoding empty message");
+            return Ok(None);
         }
         // info!("decoding");
         {
@@ -93,8 +93,8 @@ impl Decoder for MessageCodec {
                     }
                     None => {
                         warn!("head none");
-                        return Ok(None)
-                    },
+                        return Ok(None);
+                    }
                 },
                 FrameState::Data(n) => n,
             };
@@ -114,7 +114,7 @@ impl Decoder for MessageCodec {
                 None => {
                     warn!("data none");
                     Ok(None)
-                },
+                }
             }
         }
     }

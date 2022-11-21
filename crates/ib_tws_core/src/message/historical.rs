@@ -1,5 +1,5 @@
-use std::io;
 use std::i32;
+use std::io;
 
 use bytes::BytesMut;
 

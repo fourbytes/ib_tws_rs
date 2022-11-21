@@ -1,7 +1,7 @@
 [package]
 name = "ib_tws_tokio"
 description = "An Interactive Broker's TWS API client for Tokio"
-version = "0.1.0-alpha.4"
+version = "0.1.0-beta.1"
 edition = "2021"
 readme = "../../README.md"
 keywords = ["finance", "library", "interactive-brokers"]
@@ -20,6 +20,8 @@ tracing = "0.1"
 tokio-util = { version = "0.7", features = ["codec"] }
 
 bytes = "1"
+# thiserror = "1"
+# miette = "5"
 
 [dev-dependencies]
 miette = { version = "5", features = ["fancy"] }

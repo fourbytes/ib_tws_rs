@@ -1,6 +1,6 @@
 use std::io;
 
-use bytes::{BytesMut, BufMut};
+use bytes::{BufMut, BytesMut};
 
 use super::constants::*;
 use super::context::{Context, DispatchId};

@@ -23,7 +23,7 @@ pub enum Request {
     PlaceOrder(PlaceOrder),
     ReqAccountUpdates(ReqAccountUpdates),
     ReqExecutions(ReqExecutions),
-    CacelOrder(CacelOrder),
+    CancelOrder(CacelOrder),
     ReqOpenOrders(ReqOpenOrders),
     ReqIds(ReqIds),
     ReqNewsBulletins(ReqNewsBulletins),
@@ -58,9 +58,9 @@ pub enum Request {
     VerfyAndAuthRequest(VerfyAndAuthRequest),
     VerifyAndAuthMessage(VerifyAndAuthMessage),
     QueryDisplayGroups(QueryDisplayGroups),
-    SubscribeToGroupEvent(SubscribeToGroupEvent),
+    SubscribeToGroupEvents(SubscribeToGroupEvents),
     UpdateDisplayGroup(UpdateDisplayGroup),
-    UbsubscribeFromGroupEvents(UbsubscribeFromGroupEvents),
+    UnsubscribeFromGroupEvents(UbsubscribeFromGroupEvents),
     MatchingSymbol(MatchingSymbol),
     ReqFamilyCodes(ReqFamilyCodes),
     ReqMktDepthExchanges(ReqMktDepthExchanges),
@@ -78,6 +78,61 @@ pub enum Request {
     ReqHistoricalTicks(ReqHistoricalTicks),
     ReqTickByTickData(ReqTickByTickData),
     CancelTickByTickData(CancelTickByTickData),
+}
+
+impl Request {
+    pub(crate) fn set_request_id(&mut self, request_id: i32) {
+        match self {
+            Self::CancelScannerSubscription(msg) => msg.req_id = request_id,
+            Self::ReqScannerSubscription(msg) => msg.req_id = request_id,
+            Self::ReqMktData(msg) => msg.req_id = request_id,
+            Self::CancelHistoricalData(msg) => msg.req_id = request_id,
+            Self::CalculateImpliedVolatility(msg) => msg.req_id = request_id,
+            Self::CalculateOptionPrice(msg) => msg.req_id = request_id,
+            Self::CancelAccountSummary(msg) => msg.req_id = request_id,
+            Self::CancelCalculateImpliedVolatility(msg) => msg.req_id = request_id,
+            Self::CancelCalculateOptionPrice(msg) => msg.req_id = request_id,
+            Self::CancelFundamentalData(msg) => msg.req_id = request_id,
+            Self::CancelRealtimeBars(msg) => msg.req_id = request_id,
+            Self::ReqHistoricalData(msg) => msg.req_id = request_id,
+            Self::ReqHeadTimestamp(msg) => msg.req_id = request_id,
+            Self::CancelHeadTimestamp(msg) => msg.req_id = request_id,
+            Self::ReqRealtimeBars(msg) => msg.req_id = request_id,
+            Self::ReqContractDetails(msg) => msg.req_id = request_id,
+            Self::ReqMktDepth(msg) => msg.req_id = request_id,
+            Self::CancelMktData(msg) => msg.req_id = request_id,
+            Self::CancelMktDepth(msg) => msg.req_id = request_id,
+            Self::ExerciseOptions(msg) => msg.req_id = request_id,
+            Self::ReqExecutions(msg) => msg.req_id = request_id,
+            Self::ReqAccountSummary(msg) => msg.req_id = request_id,
+            Self::ReplaceFA(msg) => msg.req_id = request_id,
+            Self::ReqFundamentalData(msg) => msg.req_id = request_id,
+            Self::ReqSecDefOptParams(msg) => msg.req_id = request_id,
+            Self::ReqSoftDollarTiers(msg) => msg.req_id = request_id,
+            // Self::ReqMatchingSymbols(msg) => msg.req_id = request_id,
+            Self::ReqSmartComponents(msg) => msg.req_id = request_id,
+            Self::ReqPnl(msg) => msg.req_id = request_id,
+            Self::CancelPnl(msg) => msg.req_id = request_id,
+            Self::ReqPnlSingle(msg) => msg.req_id = request_id,
+            Self::CancelPnlSingle(msg) => msg.req_id = request_id,
+            Self::ReqHistoricalTicks(msg) => msg.req_id = request_id,
+            // Self::ReqWshMetaData(msg) => msg.req_id = request_id,
+            // Self::ReqUserInfo(msg) => msg.req_id = request_id,
+            Self::CancelTickByTickData(msg) => msg.req_id = request_id,
+            Self::ReqTickByTickData(msg) => msg.req_id = request_id,
+            Self::QueryDisplayGroups(msg) => msg.req_id = request_id,
+            Self::SubscribeToGroupEvents(msg) => msg.req_id = request_id,
+            Self::UpdateDisplayGroup(msg) => msg.req_id = request_id,
+            Self::UnsubscribeFromGroupEvents(msg) => msg.req_id = request_id,
+            Self::ReqPositionsMulti(msg) => msg.req_id = request_id,
+            Self::CancelPositionsMulti(msg) => msg.req_id = request_id,
+            Self::ReqAccountUpdatesMulti(msg) => msg.req_id = request_id,
+            Self::CancelAccountUpdatesMulti(msg) => msg.req_id = request_id,
+            Self::ReqNewsArticle(msg) => msg.req_id = request_id,
+            Self::ReqHistoricalNews(msg) => msg.req_id = request_id,
+            _ => (),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -294,6 +349,7 @@ pub struct RequestFA {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ReplaceFA {
+    pub req_id: i32,
     pub fa_data_type: i32,
     pub xml: String,
 }
@@ -412,9 +468,19 @@ pub struct ReqAccountUpdatesMulti {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ReqAccountSummary {
-    pub req_id: i32,
+    pub(crate) req_id: i32,
     pub group: String,
     pub tags: String,
+}
+
+impl ReqAccountSummary {
+    pub fn new(group: String, tags: String) -> Self {
+        Self {
+            req_id: 0,
+            group,
+            tags,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -461,7 +527,7 @@ pub struct QueryDisplayGroups {
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct SubscribeToGroupEvent {
+pub struct SubscribeToGroupEvents {
     pub req_id: i32,
     pub group_id: i32,
 }
