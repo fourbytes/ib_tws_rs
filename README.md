@@ -3,28 +3,21 @@
 
 ## Usage
 ```rust
-use ib_tws_tokio::Builder;
-use ib_tws_core::message::request::*;
+let client = {
+	let port = std::env::args()
+		.nth(1)
+		.and_then(|p| p.parse::<u32>().ok())
+		.unwrap_or(4001);
+	let transport = ib_tws_tokio::Transport::connect(
+		format!("127.0.0.1:{port}").parse().unwrap(),
+		Duration::from_secs(5),
+	)
+	.await
+	.into_diagnostic()?;
+	ib_tws_core::AsyncClient::setup(transport, 0).await?
+};
+info!(version = client.server_version(), "connected to client");
 
-let client = Builder::new(0)
-	.connect("127.0.0.1:4001".parse().unwrap(), 1)
-	.await.into_diagnostic()?;
-
-let (mut sink, stream) = client.split();
-sink.send(Request::ReqMktData(ReqMktData {
-	req_id: 1000,
-	contract: apple,
-	generic_tick_list: "".to_string(),
-	snapshot: false,
-	regulatory_snapshot: false,
-	mkt_data_options: Vec::new(),
-})).await?;
-stream.for_each(move |buf| async move {
-	match buf {
-		Response::ErrMsgMsg(msg) => warn!("{:#?}", msg),
-		buf => info!("buf: {:?}", buf),
-	}
-}).await;
 ```
 
 ## Crates
