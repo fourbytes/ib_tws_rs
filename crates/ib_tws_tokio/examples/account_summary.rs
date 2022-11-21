@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate tracing;
 
-use std::time::Duration;
+use std::{time::Duration, collections::HashMap};
 
 use futures::StreamExt;
 use ib_tws_core::message::request::ReqAccountSummary;
@@ -19,14 +19,17 @@ async fn main() -> miette::Result<()> {
         ).await.into_diagnostic()?;
         ib_tws_core::AsyncClient::setup(transport, 0).await?
     };
+    info!(version = client.server_version(), "connected to client");
 
-    info!(version = client.server_version());
-    for account in client.managed_accounts().await {
-        let mut stream = Box::pin(client.request_account_summary(ReqAccountSummary::new("All".to_owned(), "$LEDGER:ALL".to_owned())).await?);
-        while let Some(response) = stream.next().await {
-            info!(?response);
-        }
+    let mut stream = Box::pin(client.request_account_summary(ReqAccountSummary::new("All".to_owned(), "$LEDGER".to_owned())).await?);
+    let mut summary: HashMap<String, HashMap<String, String>> = HashMap::new();
+    while let Some(response) = stream.next().await {
+        summary.entry(response.account.clone())
+            .or_default()
+            .entry(response.tag)
+            .or_insert(response.value);
     }
+    println!("{:#?}", summary);
 
     Ok(())
 }
