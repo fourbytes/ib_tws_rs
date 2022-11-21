@@ -24,14 +24,14 @@ async fn main() -> miette::Result<()> {
         )
         .await
         .into_diagnostic()?;
-        ib_tws_core::AsyncClient::setup(transport, 0).await?
+        ib_tws_core::AsyncClient::setup(transport, 1).await?
     };
     info!(version = client.server_version(), "connected to client");
 
     let apple = domain::contract::Contract::new_stock("LKE", "ASX", "AUD").unwrap();
     let stock_request = Request::ReqMktData(ReqMktData {
         req_id: 1000,
-        contract: apple,
+        contract: apple.clone(),
         generic_tick_list: "".to_string(),
         snapshot: false,
         regulatory_snapshot: false,
@@ -39,6 +39,8 @@ async fn main() -> miette::Result<()> {
     });
 
     client.send(stock_request).await.into_diagnostic()?;
+    let response = client.request_contract_details(ReqContractDetails::new(apple)).await?;
+    info!(?response);
     client.response_rx().stream()
         .for_each(move |buf| async move {
             match buf {

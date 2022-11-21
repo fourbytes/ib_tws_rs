@@ -9,11 +9,14 @@ use std::{
 use flume::SendError;
 use futures::{channel::mpsc, lock::Mutex, Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
 
-use crate::message::{
-    constants::{MAX_VERSION, MIN_VERSION},
-    request::{Handshake, ReqAccountSummary, StartApi},
-    response::{AccountSummaryMsg, HandshakeAck},
-    Request, Response,
+use crate::{
+    domain::{Contract, ContractDetails},
+    message::{
+        constants::{MAX_VERSION, MIN_VERSION},
+        request::{Handshake, ReqAccountSummary, ReqContractDetails, StartApi},
+        response::{AccountSummaryMsg, HandshakeAck},
+        Request, Response,
+    },
 };
 
 #[derive(Debug, thiserror::Error, miette::Diagnostic)]
@@ -137,10 +140,13 @@ impl AsyncClient {
     }
 
     fn stream_by_request_id(&self, request_id: Option<i32>) -> impl Stream<Item = Response> + '_ {
-        self.response_rx.stream().filter(move |response| {
-            let response_request_id = response.request_id();
-            async move { response_request_id == request_id }
-        })
+        self.response_rx
+            .clone()
+            .into_stream()
+            .filter(move |response| {
+                let response_request_id = response.request_id();
+                async move { response_request_id == request_id }
+            })
     }
 
     #[instrument(skip(self))]
@@ -226,6 +232,31 @@ impl AsyncClient {
 
     pub fn server_version(&self) -> i32 {
         self.server_version.load(Ordering::Relaxed)
+    }
+
+    pub async fn request_contract_details(
+        &self,
+        message: ReqContractDetails,
+    ) -> Result<ContractDetails, Error> {
+        debug!("requesting account summary");
+        let request_id = self.send(Request::ReqContractDetails(message)).await?;
+
+        Ok(Box::pin(
+            self.stream_by_request_id(Some(request_id))
+                .take_while(|response| {
+                    let is_end = matches!(response, Response::ContractDataEndMsg(_));
+                    async move { !is_end }
+                })
+                .filter_map(|response| async move {
+                    match response {
+                        Response::ContractDataMsg(msg) => Some(msg.contract_details),
+                        _ => None,
+                    }
+                }),
+        )
+        .next()
+        .await
+        .unwrap())
     }
 
     #[instrument(skip(self))]

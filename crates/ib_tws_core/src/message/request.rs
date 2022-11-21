@@ -236,8 +236,14 @@ pub struct ReqRealtimeBars {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ReqContractDetails {
-    pub req_id: i32,
+    pub(crate) req_id: i32,
     pub contract: Contract,
+}
+
+impl ReqContractDetails {
+    #[must_use] pub fn new(contract: Contract) -> Self {
+        Self { req_id: 0, contract }
+    }
 }
 
 #[derive(Debug, Clone)]
