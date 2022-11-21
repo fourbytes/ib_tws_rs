@@ -9,5 +9,5 @@ pub mod channel;
 // pub use codec::{Decoder, Encoder};
 pub use channel::{TransportChannel, CommandChannel, channel4};
 
-mod async_client;
+pub mod async_client;
 pub use async_client::AsyncClient;
