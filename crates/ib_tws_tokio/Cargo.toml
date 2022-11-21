@@ -14,7 +14,7 @@ repository = "https://github.com/fourbytes/ib_tws_rs"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 futures = "0.3"
-ib_tws_core = "0.1.0-alpha"
+ib_tws_core = "0.1.0-beta"
 tracing = "0.1"
 
 tokio-util = { version = "0.7", features = ["codec"] }
