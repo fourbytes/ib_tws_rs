@@ -74,6 +74,8 @@ where
 
 impl AsyncClient {
     /// Setup a new client with a specified transport.
+    /// # Errors
+    /// Returns an error if either the handshake or initial start API request fails.
     pub async fn setup<T>(transport: T, client_id: i32) -> Result<Self, Error>
     where
         T: Sink<Request> + Stream<Item = Result<Response, io::Error>> + SpawnTask + Send + 'static,
@@ -107,6 +109,9 @@ impl AsyncClient {
         Ok(client)
     }
 
+    /// # Errors
+    /// Returns an error if the request channel is closed.
+    #[allow(clippy::missing_panics_doc)]
     pub async fn send(&self, mut request: Request) -> Result<i32, Error> {
         let request_id = self
             .request_id
@@ -143,7 +148,7 @@ impl AsyncClient {
         debug!("requesting start api");
         self.send(Request::StartApi(StartApi {
             client_id,
-            optional_capabilities: "".to_string(),
+            optional_capabilities: String::new(),
         }))
         .await?;
 
