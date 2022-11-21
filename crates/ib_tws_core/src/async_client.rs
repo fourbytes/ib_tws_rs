@@ -286,9 +286,8 @@ impl AsyncClient {
     #[instrument(skip(self))]
     pub async fn request_market_depth_exchanges(
         &self,
-        message: ReqMktDepthExchanges,
     ) -> Result<MktDepthExchangesMsg, Error> {
-        self.send(Request::ReqMktDepthExchanges(message)).await?;
+        self.send(Request::ReqMktDepthExchanges(ReqMktDepthExchanges {  })).await?;
 
         Box::pin(self
             .response_stream()
