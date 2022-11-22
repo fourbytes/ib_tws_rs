@@ -44,8 +44,7 @@ async fn main() -> miette::Result<()> {
     info!(?response);
     let response = client.request_market_depth_exchanges().await?;
     info!(?response);
-    let stream = client.request_market_data(stock_request).await?;
-    stream
+    client.request_market_data(stock_request).await?
         .for_each(move |response| async move {
             info!(?response);
         })

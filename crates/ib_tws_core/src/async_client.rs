@@ -268,7 +268,7 @@ impl AsyncClient {
     pub async fn request_account_summary(
         &self,
         message: ReqAccountSummary,
-    ) -> Result<impl Stream<Item = AccountSummaryMsg> + '_, Error> {
+    ) -> Result<impl Stream<Item = Result<AccountSummaryMsg, Error>> + '_, Error> {
         let request_id = self.send(Request::ReqAccountSummary(message)).await?;
 
         Ok(self
@@ -279,7 +279,8 @@ impl AsyncClient {
             })
             .filter_map(|response| async move {
                 match response {
-                    Response::AccountSummaryMsg(msg) => Some(msg),
+                    Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
+                    Response::AccountSummaryMsg(msg) => Some(Ok(msg)),
                     _ => None,
                 }
             }))
@@ -292,13 +293,14 @@ impl AsyncClient {
 
         Box::pin(self.response_stream().filter_map(|response| async move {
             match response {
-                Response::MktDepthExchangesMsg(msg) => Some(msg),
+                Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
+                Response::MktDepthExchangesMsg(msg) => Some(Ok(msg)),
                 _ => None,
             }
         }))
         .next()
         .await
-        .ok_or(Error::ResponseChannelClosed)
+        .ok_or(Error::ResponseChannelClosed)?
     }
 
     #[instrument(skip(self))]
