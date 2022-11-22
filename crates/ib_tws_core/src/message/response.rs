@@ -637,7 +637,7 @@ pub struct PositionMsg {
 #[allow(dead_code)]
 pub struct TickSizeMsg {
     pub req_id: i32,
-    pub tick_type: i32,
+    pub tick_type: TickType,
     pub size: Decimal,
 }
 
@@ -645,7 +645,7 @@ pub struct TickSizeMsg {
 #[allow(dead_code)]
 pub struct TickPriceMsg {
     pub req_id: i32,
-    pub tick_type: i32,
+    pub tick_type: TickType,
     pub price: f64,
     pub size: Decimal,
     pub attribs: TickAttr,

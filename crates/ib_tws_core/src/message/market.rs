@@ -225,7 +225,7 @@ pub fn decode_tick_size_msg(
     Ok((
         Response::TickSizeMsg(TickSizeMsg {
             req_id,
-            tick_type,
+            tick_type: tick_type.try_into().unwrap_or(TickType::UNKNOWN),
             size,
         }),
         req_id,
@@ -263,7 +263,7 @@ pub fn decode_tick_price_msg(
     Ok((
         Response::TickPriceMsg(TickPriceMsg {
             req_id,
-            tick_type,
+            tick_type: tick_type.try_into().unwrap_or(TickType::UNKNOWN),
             price,
             size,
             attribs,
