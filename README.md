@@ -1,6 +1,8 @@
 # Interactive Brokers TWS API for Rust
 [![LGPL 3.0](https://img.shields.io/crates/l/ib_tws_core?style=for-the-badge)](https://choosealicense.com/licenses/lgpl-3.0/)
 
+- Min. TWS API Version: 149
+
 ## Usage
 ### Tokio
 ```rust
