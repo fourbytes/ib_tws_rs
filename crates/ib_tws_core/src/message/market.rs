@@ -4,6 +4,7 @@ use std::{f64, i32};
 use approx::abs_diff_eq;
 use bit::BitIndex;
 use bytes::BytesMut;
+use rust_decimal_macros::dec;
 
 use super::constants::*;
 use super::context::{Context, DispatchId};
@@ -59,6 +60,7 @@ pub fn encode_req_mkt_data(
     Ok(DispatchId::Stream(req.req_id))
 }
 
+#[instrument(err)]
 pub fn decode_tick_efp_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -89,6 +91,7 @@ pub fn decode_tick_efp_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_tick_string_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -108,6 +111,7 @@ pub fn decode_tick_string_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_tick_generic_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -127,6 +131,7 @@ pub fn decode_tick_generic_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_tick_option_computation_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -207,6 +212,7 @@ pub fn decode_tick_option_computation_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_tick_size_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -214,7 +220,7 @@ pub fn decode_tick_size_msg(
     let _version = buf.read_int()?;
     let req_id = buf.read_int()?;
     let tick_type = buf.read_int()?;
-    let size = buf.read_int()?;
+    let size = buf.read_decimal()?;
 
     Ok((
         Response::TickSizeMsg(TickSizeMsg {
@@ -226,6 +232,7 @@ pub fn decode_tick_size_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_tick_price_msg(
     ctx: &mut Context,
     buf: &mut BytesMut,
@@ -234,10 +241,10 @@ pub fn decode_tick_price_msg(
     let req_id = buf.read_int()?;
     let tick_type = buf.read_int()?;
     let price = buf.read_double()?;
-    let mut size = 0;
+    let mut size = dec!(0.0);
     let mut attribs: TickAttr = Default::default();
     if version >= 2 {
-        size = buf.read_int()?;
+        size = buf.read_decimal()?;
     }
     if version >= 3 {
         let attr_mask = buf.read_int()?;
@@ -265,6 +272,7 @@ pub fn decode_tick_price_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_tick_req_params_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -286,6 +294,7 @@ pub fn decode_tick_req_params_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_tick_by_tick_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -361,6 +370,7 @@ pub fn decode_tick_by_tick_msg(
     }
 }
 
+#[instrument(err)]
 pub fn decode_tick_snapshot_end_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -374,6 +384,7 @@ pub fn decode_tick_snapshot_end_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_tick_news_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -398,6 +409,7 @@ pub fn decode_tick_news_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_market_depth_l2_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -426,6 +438,7 @@ pub fn decode_market_depth_l2_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_market_depth_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -614,6 +627,7 @@ pub fn encode_cancel_calculate_implied_volatility(
     Ok(DispatchId::Oneshot(req.req_id))
 }
 
+#[instrument(err)]
 pub fn encode_calculate_option_price(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -633,6 +647,7 @@ pub fn encode_calculate_option_price(
     Ok(DispatchId::Oneshot(req.req_id))
 }
 
+#[instrument(err)]
 pub fn encode_cancel_calculate_option_price(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -661,6 +676,7 @@ pub fn encode_req_market_data_type(
     Ok(DispatchId::Global(OPCODE_REQ_MARKET_DATA_TYPE))
 }
 
+#[instrument(err)]
 pub fn decode_market_data_type_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,
@@ -678,6 +694,7 @@ pub fn decode_market_data_type_msg(
     ))
 }
 
+#[instrument(err)]
 pub fn decode_realtime_bars_msg(
     _ctx: &mut Context,
     buf: &mut BytesMut,

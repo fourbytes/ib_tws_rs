@@ -38,9 +38,9 @@ pub const MIN_SERVER_VER_DECISION_MAKER: i32 = 138;
 pub const MIN_SERVER_VER_MIFID_EXECUTION: i32 = 139;
 pub const MIN_SERVER_VER_TICK_BY_TICK_IGNORE_SIZE: i32 = 140;
 pub const MIN_SERVER_VER_AUTO_PRICE_FOR_HEDGE: i32 = 141;
-pub const MIN_SERVER_VER_WHAT_IF_EXT_FIELDS: i32 = 142;
+pub const MIN_SERVER_VER_WHAT_IF_EXT_FIELDS: i32 = 163;
 
-pub const MIN_VERSION: i32 = 100;
+pub const MIN_VERSION: i32 = 163;
 // envelope encoding, applicable to useV100Plus mode only
 pub const MAX_VERSION: i32 = MIN_SERVER_VER_WHAT_IF_EXT_FIELDS;
 

@@ -7,6 +7,7 @@ use std::{f64, i32};
 use bytes::Buf;
 use bytes::BytesMut;
 use memchr;
+use rust_decimal::Decimal;
 
 pub trait TwsWireEncoder {
     fn push_slice(&mut self, extend: &[u8]);
@@ -81,6 +82,18 @@ impl TwsWireEncoder for Vec<u8> {
 
 pub trait TwsWireDecoder {
     fn split(&mut self) -> Result<BytesMut, io::Error>;
+
+    fn read_decimal(&mut self) -> Result<Decimal, io::Error> {
+        let str = self.read_string()?;
+        if str.is_empty() {
+            Ok(Decimal::new(0, 0))
+        } else {
+            Decimal::from_str(&str)
+                .map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidData, "cannot read decimal from stream")
+                })
+        }
+    }
 
     fn read_int(&mut self) -> Result<i32, io::Error> {
         let s = self.split()?;

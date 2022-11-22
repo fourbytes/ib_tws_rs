@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use ordered_float::NotNan;
+use rust_decimal::Decimal;
 
 use super::constants::{
     OPCODE_HANDSHAKE, OPCODE_REQUEST_FA, OPCODE_REQ_ACCOUNT_UPDATES, OPCODE_REQ_CURRENT_TIME,
@@ -637,7 +638,7 @@ pub struct PositionMsg {
 pub struct TickSizeMsg {
     pub req_id: i32,
     pub tick_type: i32,
-    pub size: i32,
+    pub size: Decimal,
 }
 
 #[derive(Debug, Clone)]
@@ -646,7 +647,7 @@ pub struct TickPriceMsg {
     pub req_id: i32,
     pub tick_type: i32,
     pub price: f64,
-    pub size: i32,
+    pub size: Decimal,
     pub attribs: TickAttr,
 }
 

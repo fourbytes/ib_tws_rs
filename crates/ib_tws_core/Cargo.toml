@@ -17,6 +17,8 @@ bit = "0.1"
 ordered-float = "3"
 approx = "0.5"
 memchr = "2"
+rust_decimal = "1"
+rust_decimal_macros = "1"
 
 futures = { version = "0.3", optional = true }
 async-broadcast = { version = "0.4", optional = true }

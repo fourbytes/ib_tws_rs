@@ -155,4 +155,14 @@ impl Contract {
         contract.sec_type = "STK".to_string();
         Ok(contract)
     }
+
+    pub fn new_cryptocurrency(symbol: &str, currency: &str) -> Result<Contract, io::Error> {
+        let mut contract = Contract::new();
+        contract.symbol = symbol.to_string();
+        contract.currency = currency.to_string();
+        //In the API side, NASDAQ is always defined as ISLAND
+        contract.exchange = "PAXOS".to_string();
+        contract.sec_type = "CRYPTO".to_string();
+        Ok(contract)
+    }
 }
