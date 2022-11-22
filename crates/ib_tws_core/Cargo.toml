@@ -25,6 +25,10 @@ tracing = "0.1"
 thiserror = "1"
 miette = "5"
 
+document-features = "0.2"
+
 [features]
 default = []
+
+## Enables the `AsyncClient`
 async = ["futures", "async-broadcast"]

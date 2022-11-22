@@ -1,3 +1,6 @@
+//! ## Feature flags
+#![doc = document_features::document_features!()]
+
 #![warn(clippy::pedantic)]
 
 #[macro_use]
