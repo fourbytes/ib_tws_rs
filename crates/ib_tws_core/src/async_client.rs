@@ -15,7 +15,7 @@ use crate::{
         constants::{MAX_VERSION, MIN_VERSION},
         request::{
             Handshake, ReqAccountSummary, ReqContractDetails, ReqMktData, ReqMktDepthExchanges,
-            StartApi,
+            StartApi, ReqMktDepth,
         },
         response::{AccountSummaryMsg, ErrMsgMsg, HandshakeAck, MktDepthExchangesMsg},
         Request, Response,
@@ -325,6 +325,25 @@ impl AsyncClient {
                     | Response::TickEFPMsg(_)
                     | Response::TickGenericMsg(_)
                     | Response::TickOptionComputationMsg(_)) => Some(Ok(response)),
+                    _ => None,
+                }
+            }))
+    }
+
+    #[instrument(skip(self))]
+    pub async fn request_market_depth(
+        &self,
+        message: ReqMktDepth,
+    ) -> Result<impl Stream<Item = Result<Response, Error>> + '_, Error> {
+        let request_id = self.send(Request::ReqMktDepth(message)).await?;
+
+        Ok(self
+            .response_stream_by_id(Some(request_id))
+            .filter_map(|response| async move {
+                match response {
+                    Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
+                    response @ (Response::MarketDepthL2Msg(_)
+                    | Response::MarketDepthMsg(_)) => Some(Ok(response)),
                     _ => None,
                 }
             }))

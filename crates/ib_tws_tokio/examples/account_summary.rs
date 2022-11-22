@@ -3,7 +3,7 @@ extern crate tracing;
 
 use std::{collections::HashMap, time::Duration};
 
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use ib_tws_core::message::request::ReqAccountSummary;
 use miette::IntoDiagnostic;
 
@@ -35,7 +35,7 @@ async fn main() -> miette::Result<()> {
             .await?,
     );
     let mut summary: HashMap<String, HashMap<String, String>> = HashMap::new();
-    while let Some(response) = stream.next().await {
+    while let Some(response) = stream.try_next().await? {
         summary
             .entry(response.account.clone())
             .or_default()
