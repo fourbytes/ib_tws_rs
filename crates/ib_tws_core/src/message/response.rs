@@ -10,7 +10,7 @@ use super::constants::{
     OPCODE_REQ_SCANNER_PARAMETERS, OPCODE_VERIFY_AND_AUTH_MESSAGE, OPCODE_VERIFY_AND_AUTH_REQUEST,
     OPCODE_VERIFY_MESSAGE, OPCODE_VERIFY_REQUEST,
 };
-use crate::domain::*;
+use crate::domain::{*, market_data::MarketDataType};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -327,7 +327,7 @@ pub struct CommissionReportMsg {
 #[allow(dead_code)]
 pub struct MarketDataTypeMsg {
     pub req_id: i32,
-    pub market_data_type: i32,
+    pub market_data_type: MarketDataType,
 }
 
 #[derive(Debug, Clone)]

@@ -688,7 +688,7 @@ pub fn decode_market_data_type_msg(
     Ok((
         Response::MarketDataTypeMsg(MarketDataTypeMsg {
             req_id,
-            market_data_type,
+            market_data_type: market_data_type.try_into().unwrap(),
         }),
         req_id,
     ))

@@ -5,7 +5,7 @@ use std::i32;
 #[derive(Debug, Clone)]
 pub struct MarketDataTypeMsg {
     pub req_id: i32,
-    pub market_data_type: i32,
+    pub market_data_type: MarketDataType,
 }
 
 #[derive(Debug, Clone, Copy)]
