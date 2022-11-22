@@ -8,7 +8,7 @@ use std::{
 
 use futures::{Future, Sink, Stream, StreamExt, SinkExt};
 use ib_tws_core::{
-    async_client::SpawnTask,
+    SpawnTask,
     message::{Request, Response},
 };
 use tokio::{io::AsyncWriteExt, net::TcpStream};

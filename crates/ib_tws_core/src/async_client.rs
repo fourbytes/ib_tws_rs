@@ -17,25 +17,10 @@ use crate::{
             Handshake, ReqAccountSummary, ReqContractDetails, ReqMktData, ReqMktDepthExchanges,
             StartApi, ReqMktDepth, ReqMarketDataType,
         },
-        response::{AccountSummaryMsg, ErrMsgMsg, HandshakeAck, MktDepthExchangesMsg, MarketDataTypeMsg},
+        response::{AccountSummaryMsg, HandshakeAck, MktDepthExchangesMsg},
         Request, Response,
-    },
+    }, Error,
 };
-
-#[derive(Debug, thiserror::Error, miette::Diagnostic)]
-pub enum Error {
-    #[error("request channel closed")]
-    RequestChannelClosed,
-    #[error("response channel closed")]
-    ResponseChannelClosed,
-    #[error("transport io error: {0}")]
-    TransportIo(#[from] io::Error),
-    #[error("api error: {0:?}")]
-    ApiError(ErrMsgMsg),
-}
-
-// pub trait RequestSink = Sink<Request>;
-// pub trait ResponseStream = Stream<Item = Result<Response, io::Error>>;
 
 #[derive(Debug)]
 pub struct AsyncClient {
