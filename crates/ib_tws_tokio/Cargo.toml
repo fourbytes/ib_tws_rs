@@ -23,5 +23,6 @@ bytes = "1"
 # miette = "5"
 
 [dev-dependencies]
+sugars = "3"
 miette = { version = "5", features = ["fancy"] }
 tracing-subscriber = "0.3"

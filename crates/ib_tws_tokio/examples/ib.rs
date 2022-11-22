@@ -1,13 +1,16 @@
 #[macro_use]
 extern crate tracing;
 
+use std::collections::HashSet;
 use std::string::ToString;
 use std::time::Duration;
 
 use futures::StreamExt;
 use ib_tws_core::domain;
+use ib_tws_core::domain::market_data::GenericTick;
 use ib_tws_core::message::{request::*, Response};
 use miette::IntoDiagnostic;
+use sugars::hset;
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
@@ -28,21 +31,26 @@ async fn main() -> miette::Result<()> {
     };
     info!(version = client.server_version(), "connected to client");
 
-    let apple = domain::contract::Contract::new_stock("LKE", "ASX", "AUD").unwrap();
-    let stock_request = Request::ReqMktData(ReqMktData {
-        req_id: 1000,
-        contract: apple.clone(),
-        generic_tick_list: "".to_string(),
-        snapshot: false,
-        regulatory_snapshot: false,
-        mkt_data_options: Vec::new(),
-    });
+    let contract = domain::contract::Contract::new_stock("LKE", "ASX", "AUD").unwrap();
+    let stock_request = ReqMktData::new(
+        contract.clone(),
+        hset!{GenericTick::MiscellaneousStats},
+        true,
+        false,
+        Vec::new(),
+    );
 
-    client.send(stock_request).await.into_diagnostic()?;
-    let response = client.request_contract_details(ReqContractDetails::new(apple)).await?;
+    let response = client.request_contract_details(ReqContractDetails::new(contract)).await?;
     info!(?response);
     let response = client.request_market_depth_exchanges().await?;
     info!(?response);
+    let stream = client.request_market_data(stock_request).await?;
+    stream
+        .for_each(move |response| async move {
+            info!(?response);
+        })
+        .await;
+
     client.response_stream()
         .for_each(move |buf| async move {
             match buf {

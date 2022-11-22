@@ -13,8 +13,11 @@ use crate::{
     domain::ContractDetails,
     message::{
         constants::{MAX_VERSION, MIN_VERSION},
-        request::{Handshake, ReqAccountSummary, ReqContractDetails, StartApi, ReqMktDepthExchanges},
-        response::{AccountSummaryMsg, HandshakeAck, ErrMsgMsg, MktDepthExchangesMsg},
+        request::{
+            Handshake, ReqAccountSummary, ReqContractDetails, ReqMktData, ReqMktDepthExchanges,
+            StartApi,
+        },
+        response::{AccountSummaryMsg, ErrMsgMsg, HandshakeAck, MktDepthExchangesMsg},
         Request, Response,
     },
 };
@@ -142,11 +145,10 @@ impl AsyncClient {
     }
 
     fn response_stream_by_id(&self, id: Option<i32>) -> impl Stream<Item = Response> + '_ {
-        self.response_stream()
-            .filter(move |response| {
-                let response_request_id = response.request_id();
-                async move { response_request_id == id }
-            })
+        self.response_stream().filter(move |response| {
+            let response_request_id = response.request_id();
+            async move { response_request_id == id }
+        })
     }
 
     #[instrument(skip(self))]
@@ -253,7 +255,7 @@ impl AsyncClient {
                         _ => {
                             warn!(?response, "unexpected response for request id");
                             None
-                        },
+                        }
                     }
                 }),
         )
@@ -284,22 +286,46 @@ impl AsyncClient {
     }
 
     #[instrument(skip(self))]
-    pub async fn request_market_depth_exchanges(
-        &self,
-    ) -> Result<MktDepthExchangesMsg, Error> {
-        self.send(Request::ReqMktDepthExchanges(ReqMktDepthExchanges {  })).await?;
+    pub async fn request_market_depth_exchanges(&self) -> Result<MktDepthExchangesMsg, Error> {
+        self.send(Request::ReqMktDepthExchanges(ReqMktDepthExchanges {}))
+            .await?;
 
-        Box::pin(self
-            .response_stream()
+        Box::pin(self.response_stream().filter_map(|response| async move {
+            match response {
+                Response::MktDepthExchangesMsg(msg) => Some(msg),
+                _ => None,
+            }
+        }))
+        .next()
+        .await
+        .ok_or(Error::ResponseChannelClosed)
+    }
+
+    #[instrument(skip(self))]
+    pub async fn request_market_data(
+        &self,
+        message: ReqMktData,
+    ) -> Result<impl Stream<Item = Result<Response, Error>> + '_, Error> {
+        let request_id = self.send(Request::ReqMktData(message)).await?;
+
+        Ok(self
+            .response_stream_by_id(Some(request_id))
+            .take_while(|response| {
+                let is_end = matches!(response, Response::TickSnapshotEndMsg(_));
+                async move { !is_end }
+            })
             .filter_map(|response| async move {
                 match response {
-                    Response::MktDepthExchangesMsg(msg) => Some(msg),
+                    Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
+                    response @ (Response::TickSizeMsg(_)
+                    | Response::TickPriceMsg(_)
+                    | Response::TickStringMsg(_)
+                    | Response::TickEFPMsg(_)
+                    | Response::TickGenericMsg(_)
+                    | Response::TickOptionComputationMsg(_)) => Some(Ok(response)),
                     _ => None,
                 }
             }))
-            .next()
-            .await
-            .ok_or(Error::ResponseChannelClosed)
     }
 }
 

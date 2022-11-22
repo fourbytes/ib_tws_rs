@@ -1,4 +1,6 @@
-use crate::domain::*;
+use std::collections::HashSet;
+
+use crate::domain::{*, market_data::GenericTick};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -173,10 +175,23 @@ pub struct ReqScannerSubscription {
 pub struct ReqMktData {
     pub req_id: i32,
     pub contract: Contract,
-    pub generic_tick_list: String,
+    pub generic_tick_list: HashSet<GenericTick>,
     pub snapshot: bool,
     pub regulatory_snapshot: bool,
     pub mkt_data_options: Vec<TagValue>,
+}
+
+impl ReqMktData {
+    #[must_use] pub fn new(contract: Contract, generic_tick_list: HashSet<GenericTick>, snapshot: bool, regulatory_snapshot: bool, mkt_data_options: Vec<TagValue>) -> Self {
+        Self {
+            req_id: 0,
+            contract,
+            generic_tick_list,
+            snapshot,
+            regulatory_snapshot,
+            mkt_data_options,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

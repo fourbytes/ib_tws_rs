@@ -46,7 +46,7 @@ pub fn encode_req_mkt_data(
         buf.push_bool(false);
     }
 
-    buf.push_string(&req.generic_tick_list);
+    buf.push_string(&req.generic_tick_list.iter().map(|t| format!("{}", *t as i32)).collect::<Vec<_>>().join(","));
 
     buf.push_bool(req.snapshot);
 

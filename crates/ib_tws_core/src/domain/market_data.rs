@@ -419,3 +419,32 @@ impl From<i32> for TickType {
         }
     }
 }
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[repr(i32)]
+pub enum GenericTick {
+    /// Currently for stocks.
+    OptionVolume = 100,
+    /// Currently for stocks.
+    OptionOpenInterest = 101,
+    /// Currently for stocks.
+    HistoricalVolatility = 104,
+    /// Currently for stocks.
+    AverageOptionVolume = 105,
+    /// Currently for stocks.
+    OptionImpliedVolatility = 106,
+    IndexFuturePremium = 162,
+    MiscellaneousStats = 165,
+    /// Used in TWS P&L computations
+    MarkPrice = 221,
+    /// Volumes, price, and imbalance
+    AuctionValues = 225,
+    /// Contains the last trade price, last trade size, last trade time, total volume, VWAP, and
+    /// single trade flag.
+    RtVolume = 233,
+    Shortable = 236,
+    Inventory = 256,
+    FundamentalRatios = 258,
+    RealtimeHistoricalVolatility = 411,
+    IbDividends = 456
+}
