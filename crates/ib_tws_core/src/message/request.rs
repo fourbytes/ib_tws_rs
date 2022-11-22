@@ -270,6 +270,12 @@ pub struct ReqMktDepth {
     pub options: Vec<TagValue>,
 }
 
+impl ReqMktDepth {
+    #[must_use] pub fn new(contract: Contract, num_rows: i32, options: Vec<TagValue>) -> Self {
+        Self { req_id: 0, contract, num_rows, options }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct CancelMktData {

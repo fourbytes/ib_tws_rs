@@ -293,7 +293,6 @@ impl AsyncClient {
 
         Box::pin(self.response_stream().filter_map(|response| async move {
             match response {
-                Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
                 Response::MktDepthExchangesMsg(msg) => Some(Ok(msg)),
                 _ => None,
             }

@@ -54,7 +54,6 @@ impl Decoder for Codec {
                         self.state = FrameState::Data(n);
                         n
                     } else {
-                        warn!("head none");
                         return Ok(None);
                     }
                 }
@@ -71,7 +70,6 @@ impl Decoder for Codec {
 
                 Ok(response)
             } else {
-                warn!("data none");
                 Ok(None)
             }
         }

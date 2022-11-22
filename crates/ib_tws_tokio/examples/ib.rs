@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::string::ToString;
 use std::time::Duration;
 
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use ib_tws_core::domain;
 use ib_tws_core::domain::market_data::GenericTick;
 use ib_tws_core::message::{request::*, Response};
@@ -40,15 +40,22 @@ async fn main() -> miette::Result<()> {
         Vec::new(),
     );
 
-    let response = client.request_contract_details(ReqContractDetails::new(contract)).await?;
+    let response = client.request_contract_details(ReqContractDetails::new(contract.clone())).await?;
     info!(?response);
     let response = client.request_market_depth_exchanges().await?;
     info!(?response);
-    client.request_market_data(stock_request).await?
-        .for_each(move |response| async move {
+    client.request_market_depth(ReqMktDepth::new(contract, 1000, vec![])).await?
+        .try_for_each(move |response| async move {
             info!(?response);
+            Ok(())
         })
-        .await;
+        .await?;
+    client.request_market_data(stock_request).await?
+        .try_for_each(move |response| async move {
+            info!(?response);
+            Ok(())
+        })
+        .await?;
 
     client.response_stream()
         .for_each(move |buf| async move {
