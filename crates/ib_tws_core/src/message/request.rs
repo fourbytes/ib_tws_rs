@@ -267,12 +267,13 @@ pub struct ReqMktDepth {
     pub req_id: i32,
     pub contract: Contract,
     pub num_rows: i32,
+    pub is_smart_depth: bool,
     pub options: Vec<TagValue>,
 }
 
 impl ReqMktDepth {
-    #[must_use] pub fn new(contract: Contract, num_rows: i32, options: Vec<TagValue>) -> Self {
-        Self { req_id: 0, contract, num_rows, options }
+    #[must_use] pub fn new(contract: Contract, num_rows: i32, is_smart_depth: bool, options: Vec<TagValue>) -> Self {
+        Self { req_id: 0, contract, num_rows, is_smart_depth, options }
     }
 }
 

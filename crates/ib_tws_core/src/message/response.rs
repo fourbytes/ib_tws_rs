@@ -449,7 +449,7 @@ pub struct MarketDepthMsg {
     pub operation: i32,
     pub side: i32,
     pub price: f64,
-    pub size: i32,
+    pub size: Decimal,
 }
 
 #[derive(Debug, Clone)]

@@ -450,7 +450,7 @@ pub fn decode_market_depth_msg(
     let operation = buf.read_int()?;
     let side = buf.read_int()?;
     let price = buf.read_double()?;
-    let size = buf.read_int()?;
+    let size = buf.read_decimal()?;
 
     Ok((
         Response::MarketDepthMsg(MarketDepthMsg {
@@ -547,7 +547,7 @@ pub fn encode_req_realtime_bars(
 }
 
 pub fn encode_req_mkt_depth(
-    _ctx: &mut Context,
+    ctx: &mut Context,
     buf: &mut BytesMut,
     req: &ReqMktDepth,
 ) -> Result<DispatchId, EncodeError> {
@@ -557,9 +557,12 @@ pub fn encode_req_mkt_depth(
     buf.push_int(VERSION);
     buf.push_int(req.req_id);
 
-    encode_contract_without_primary_exch(buf, &req.contract);
+    encode_contract(buf, &req.contract);
 
     buf.push_int(req.num_rows);
+
+    // FIXME: if (ctx.server_version() >= MIN_SERVER_VER_SMART_DEPTH) {
+    buf.push_bool(req.is_smart_depth);
 
     encode_tagvalue_as_string(buf, &req.options);
 
