@@ -35,7 +35,7 @@ pub fn encode_set_server_log_level(
 
     buf.push_int(SET_SERVER_LOGLEVEL);
     buf.push_int(VERSION);
-    buf.push_int(req.log_level);
+    buf.push_int(req.log_level as i32);
 
     Ok(DispatchId::Global(OPCODE_SET_SERVER_LOG_LEVEL))
 }

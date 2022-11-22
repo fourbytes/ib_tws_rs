@@ -10,12 +10,12 @@ use async_broadcast::SendError;
 use futures::{channel::mpsc, lock::Mutex, Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
 
 use crate::{
-    domain::{ContractDetails, market_data::MarketDataType},
+    domain::{ContractDetails, market_data::MarketDataType, misc::ServerLogLevel},
     message::{
         constants::{MAX_VERSION, MIN_VERSION},
         request::{
             Handshake, ReqAccountSummary, ReqContractDetails, ReqMktData, ReqMktDepthExchanges,
-            StartApi, ReqMktDepth, ReqMarketDataType,
+            StartApi, ReqMktDepth, ReqMarketDataType, SetServerLogLevel,
         },
         response::{AccountSummaryMsg, HandshakeAck, MktDepthExchangesMsg},
         Request, Response,
@@ -340,6 +340,15 @@ impl AsyncClient {
         market_data_type: MarketDataType,
     ) -> Result<(), Error> {
         self.send(Request::ReqMarketDataType(ReqMarketDataType { market_data_type })).await?;
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub async fn set_server_log_level(
+        &self,
+        log_level: ServerLogLevel,
+    ) -> Result<(), Error> {
+        self.send(Request::SetServerLogLevel(SetServerLogLevel { log_level })).await?;
         Ok(())
     }
 }

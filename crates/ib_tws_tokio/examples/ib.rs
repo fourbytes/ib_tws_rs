@@ -42,10 +42,11 @@ async fn main() -> miette::Result<()> {
 
     let contract = domain::Contract::new_stock("LKE", "ASX", "AUD").unwrap();
 
+    client.set_server_log_level(domain::misc::ServerLogLevel::Detail).await?;
     let response = client.request_contract_details(ReqContractDetails::new(contract.clone())).await?;
     info!(?response);
-    // let response = client.request_market_depth_exchanges().await?;
-    // info!(?response);
+    let response = client.request_market_depth_exchanges().await?;
+    info!(?response);
     client.request_market_data_type(MarketDataType::DELAYED).await?;
     client.request_market_data(ReqMktData::new(
         contract.clone(),

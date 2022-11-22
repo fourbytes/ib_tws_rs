@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::domain::{*, market_data::{GenericTick, MarketDataType}};
+use crate::domain::{*, market_data::{GenericTick, MarketDataType}, misc::ServerLogLevel};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -350,7 +350,7 @@ pub struct CancelNewsBulletins {}
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct SetServerLogLevel {
-    pub log_level: i32,
+    pub log_level: ServerLogLevel,
 }
 
 #[derive(Debug, Clone)]
