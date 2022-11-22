@@ -253,6 +253,12 @@ pub enum TickType {
     UNKNOWN = i32::MAX,
 }
 
+impl Default for TickType {
+    fn default() -> Self {
+        Self::UNKNOWN
+    }
+}
+
 impl fmt::Display for TickType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {

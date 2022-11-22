@@ -77,6 +77,7 @@ pub enum OrderCondition {
 }
 
 impl OrderCondition {
+    #[must_use]
     pub fn type_val(&self) -> i32 {
         match self {
             OrderCondition::PriceCondition(_) => 1,

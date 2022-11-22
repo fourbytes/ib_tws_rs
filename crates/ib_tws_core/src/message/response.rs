@@ -563,7 +563,7 @@ pub struct OrderStatusMsg {
 #[allow(dead_code)]
 pub struct TickEFPMsg {
     pub req_id: i32,
-    pub tick_type: i32,
+    pub tick_type: Decimal,
     pub basis_points: f64,
     pub formatted_basis_points: String,
     pub implied_futures_price: f64,
@@ -577,7 +577,7 @@ pub struct TickEFPMsg {
 #[allow(dead_code)]
 pub struct TickStringMsg {
     pub req_id: i32,
-    pub tick_type: i32,
+    pub tick_type: TickType,
     pub value: String,
 }
 
@@ -585,7 +585,7 @@ pub struct TickStringMsg {
 #[allow(dead_code)]
 pub struct TickGenericMsg {
     pub req_id: i32,
-    pub tick_type: i32,
+    pub tick_type: TickType,
     pub value: f64,
 }
 
@@ -593,7 +593,7 @@ pub struct TickGenericMsg {
 #[allow(dead_code)]
 pub struct TickOptionComputationMsg {
     pub req_id: i32,
-    pub tick_type: i32,
+    pub tick_type: TickType,
     pub implied_vol: f64,
     pub delta: f64,
     pub opt_price: f64,
@@ -706,7 +706,7 @@ pub struct TickReqParamsMsg {
 #[allow(dead_code)]
 pub struct TickByTickAllLastMsg {
     pub req_id: i32,
-    pub tick_type: i32,
+    pub tick_type: TickType,
     pub time: i64,
     pub price: f64,
     pub size: i32,

@@ -78,7 +78,7 @@ pub fn decode_tick_efp_msg(
     Ok((
         Response::TickEFPMsg(TickEFPMsg {
             req_id,
-            tick_type,
+            tick_type: tick_type.try_into().unwrap_or_default(),
             basis_points,
             formatted_basis_points,
             implied_futures_price,
@@ -104,7 +104,7 @@ pub fn decode_tick_string_msg(
     Ok((
         Response::TickStringMsg(TickStringMsg {
             req_id,
-            tick_type,
+            tick_type: tick_type.try_into().unwrap_or_default(),
             value,
         }),
         req_id,
@@ -124,7 +124,7 @@ pub fn decode_tick_generic_msg(
     Ok((
         Response::TickGenericMsg(TickGenericMsg {
             req_id,
-            tick_type,
+            tick_type: tick_type.try_into().unwrap_or_default(),
             value,
         }),
         req_id,
@@ -198,7 +198,7 @@ pub fn decode_tick_option_computation_msg(
     Ok((
         Response::TickOptionComputationMsg(TickOptionComputationMsg {
             req_id,
-            tick_type,
+            tick_type: tick_type.try_into().unwrap_or_default(),
             implied_vol,
             delta,
             opt_price,
@@ -317,7 +317,7 @@ pub fn decode_tick_by_tick_msg(
             Ok((
                 Response::TickByTickAllLastMsg(TickByTickAllLastMsg {
                     req_id,
-                    tick_type,
+                    tick_type: tick_type.try_into().unwrap_or_default(),
                     time,
                     price,
                     size,
