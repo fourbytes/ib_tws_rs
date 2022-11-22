@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::domain::{*, market_data::GenericTick};
+use crate::domain::{*, market_data::{GenericTick, MarketDataType}};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -436,7 +436,7 @@ pub struct ReqGlobalCancel {}
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ReqMarketDataType {
-    pub market_data_type: i32,
+    pub market_data_type: MarketDataType,
 }
 
 #[derive(Debug, Clone)]

@@ -656,7 +656,7 @@ pub fn encode_req_market_data_type(
 
     buf.push_int(REQ_MARKET_DATA_TYPE);
     buf.push_int(VERSION);
-    buf.push_int(req.market_data_type);
+    buf.push_int(req.market_data_type as i32);
 
     Ok(DispatchId::Global(OPCODE_REQ_MARKET_DATA_TYPE))
 }

@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use futures::{StreamExt, TryStreamExt};
 use ib_tws_core::domain;
-use ib_tws_core::domain::market_data::GenericTick;
+use ib_tws_core::domain::market_data::{GenericTick, MarketDataType};
 use ib_tws_core::message::{request::*, Response};
 use miette::IntoDiagnostic;
 use sugars::hset;
@@ -31,39 +31,40 @@ async fn main() -> miette::Result<()> {
     };
     info!(version = client.server_version(), "connected to client");
 
-    let contract = domain::contract::Contract::new_stock("LKE", "ASX", "AUD").unwrap();
-    let stock_request = ReqMktData::new(
-        contract.clone(),
-        hset!{GenericTick::MiscellaneousStats},
-        true,
-        false,
-        Vec::new(),
-    );
+    tokio::task::spawn(client.response_stream()
+        .for_each(move |buf| async move {
+            match buf {
+                Response::ErrMsgMsg(msg) => warn!("{:#?}", msg),
+                _ => (),
+                //buf => info!("{:#?}", buf),
+            }
+        }));
+
+    let contract = domain::Contract::new_stock("LKE", "ASX", "AUD").unwrap();
 
     let response = client.request_contract_details(ReqContractDetails::new(contract.clone())).await?;
     info!(?response);
-    let response = client.request_market_depth_exchanges().await?;
-    info!(?response);
+    // let response = client.request_market_depth_exchanges().await?;
+    // info!(?response);
+    client.request_market_data_type(MarketDataType::DELAYED).await?;
+    client.request_market_data(ReqMktData::new(
+        contract.clone(),
+        hset!{GenericTick::MiscellaneousStats},
+        false,
+        false,
+        Vec::new(),
+    )).await?
+        .try_for_each(move |response| async move {
+            info!(?response);
+            Ok(())
+        })
+        .await?;
     client.request_market_depth(ReqMktDepth::new(contract, 1000, vec![])).await?
         .try_for_each(move |response| async move {
             info!(?response);
             Ok(())
         })
         .await?;
-    client.request_market_data(stock_request).await?
-        .try_for_each(move |response| async move {
-            info!(?response);
-            Ok(())
-        })
-        .await?;
 
-    client.response_stream()
-        .for_each(move |buf| async move {
-            match buf {
-                Response::ErrMsgMsg(msg) => warn!("{:#?}", msg),
-                buf => info!("buf: {:?}", buf),
-            }
-        })
-        .await;
     Ok(())
 }

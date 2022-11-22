@@ -8,14 +8,28 @@ pub struct MarketDataTypeMsg {
     pub market_data_type: i32,
 }
 
-#[derive(Debug, Clone)]
-#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+#[repr(i32)]
 #[allow(non_camel_case_types)]
 pub enum MarketDataType {
     REALTIME = 1,
     FROZEN = 2,
     DELAYED = 3,
     DELAYED_FROZEN = 4,
+}
+
+impl TryFrom<i32> for MarketDataType {
+    type Error = ();
+
+    fn try_from(v: i32) -> Result<Self, Self::Error> {
+        match v {
+            x if x == Self::REALTIME as i32 => Ok(Self::REALTIME),
+            x if x == Self::FROZEN as i32 => Ok(Self::FROZEN),
+            x if x == Self::DELAYED as i32 => Ok(Self::DELAYED),
+            x if x == Self::DELAYED_FROZEN as i32 => Ok(Self::DELAYED_FROZEN),
+            _ => Err(()),
+        }
+    }
 }
 
 impl fmt::Display for MarketDataType {

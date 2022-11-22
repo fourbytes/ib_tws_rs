@@ -10,14 +10,14 @@ use async_broadcast::SendError;
 use futures::{channel::mpsc, lock::Mutex, Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
 
 use crate::{
-    domain::ContractDetails,
+    domain::{ContractDetails, market_data::MarketDataType},
     message::{
         constants::{MAX_VERSION, MIN_VERSION},
         request::{
             Handshake, ReqAccountSummary, ReqContractDetails, ReqMktData, ReqMktDepthExchanges,
-            StartApi, ReqMktDepth,
+            StartApi, ReqMktDepth, ReqMarketDataType,
         },
-        response::{AccountSummaryMsg, ErrMsgMsg, HandshakeAck, MktDepthExchangesMsg},
+        response::{AccountSummaryMsg, ErrMsgMsg, HandshakeAck, MktDepthExchangesMsg, MarketDataTypeMsg},
         Request, Response,
     },
 };
@@ -319,6 +319,7 @@ impl AsyncClient {
                 match response {
                     Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
                     response @ (Response::TickSizeMsg(_)
+                    | Response::MarketDataTypeMsg(_)
                     | Response::TickPriceMsg(_)
                     | Response::TickStringMsg(_)
                     | Response::TickEFPMsg(_)
@@ -346,6 +347,15 @@ impl AsyncClient {
                     _ => None,
                 }
             }))
+    }
+
+    #[instrument(skip(self))]
+    pub async fn request_market_data_type(
+        &self,
+        market_data_type: MarketDataType,
+    ) -> Result<(), Error> {
+        self.send(Request::ReqMarketDataType(ReqMarketDataType { market_data_type })).await?;
+        Ok(())
     }
 }
 

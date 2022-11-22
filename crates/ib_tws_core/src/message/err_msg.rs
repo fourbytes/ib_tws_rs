@@ -22,7 +22,6 @@ pub fn decode_err_msg(
                 id: -1,
                 error_code: -1,
                 error_message: msg,
-                advanced_order_reject_json: None,
             }),
             -1,
         ))
@@ -30,13 +29,11 @@ pub fn decode_err_msg(
         let id = buf.read_int()?;
         let error_code = buf.read_int()?;
         let error_message = buf.read_string()?;
-        // let advanced_order_reject_json = buf.read_string()?;
         Ok((
             Response::ErrMsgMsg(ErrMsgMsg {
                 id,
                 error_code,
                 error_message,
-                advanced_order_reject_json: None,
             }),
             OPCODE_ERR,
         ))
