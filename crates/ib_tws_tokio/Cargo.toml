@@ -1,7 +1,7 @@
 [package]
 name = "ib_tws_tokio"
 description = "An Interactive Broker's TWS API client for Tokio"
-version = "0.1.0-beta.4"
+version = "0.1.0"
 edition = "2021"
 keywords = ["finance", "library", "interactive-brokers"]
 categories = ["api-bindings"]
@@ -13,7 +13,7 @@ repository = "https://github.com/fourbytes/ib_tws_rs"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 futures = "0.3"
-ib_tws_core = { version = "0.1.0-beta", features = ["async"] }
+ib_tws_core = { version = "0.1", features = ["async"] }
 tracing = "0.1"
 
 tokio-util = { version = "0.7", features = ["codec"] }
