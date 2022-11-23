@@ -10,16 +10,17 @@ use async_broadcast::SendError;
 use futures::{channel::mpsc, lock::Mutex, Future, Sink, SinkExt, Stream, StreamExt, TryStreamExt};
 
 use crate::{
-    domain::{ContractDetails, market_data::MarketDataType, misc::ServerLogLevel},
+    domain::{market_data::MarketDataType, misc::ServerLogLevel, ContractDetails},
     message::{
         constants::{MAX_VERSION, MIN_VERSION},
         request::{
-            Handshake, ReqAccountSummary, ReqContractDetails, ReqMktData, ReqMktDepthExchanges,
-            StartApi, ReqMktDepth, ReqMarketDataType, SetServerLogLevel,
+            Handshake, ReqAccountSummary, ReqContractDetails, ReqMarketDataType, ReqMktData,
+            ReqMktDepth, ReqMktDepthExchanges, ReqTickByTickData, SetServerLogLevel, StartApi,
         },
         response::{AccountSummaryMsg, HandshakeAck, MktDepthExchangesMsg},
         Request, Response,
-    }, Error,
+    },
+    Error,
 };
 
 #[derive(Debug)]
@@ -327,8 +328,9 @@ impl AsyncClient {
             .filter_map(|response| async move {
                 match response {
                     Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
-                    response @ (Response::MarketDepthL2Msg(_)
-                    | Response::MarketDepthMsg(_)) => Some(Ok(response)),
+                    response @ (Response::MarketDepthL2Msg(_) | Response::MarketDepthMsg(_)) => {
+                        Some(Ok(response))
+                    }
                     _ => None,
                 }
             }))
@@ -339,17 +341,39 @@ impl AsyncClient {
         &self,
         market_data_type: MarketDataType,
     ) -> Result<(), Error> {
-        self.send(Request::ReqMarketDataType(ReqMarketDataType { market_data_type })).await?;
+        self.send(Request::ReqMarketDataType(ReqMarketDataType {
+            market_data_type,
+        }))
+        .await?;
         Ok(())
     }
 
     #[instrument(skip(self))]
-    pub async fn set_server_log_level(
-        &self,
-        log_level: ServerLogLevel,
-    ) -> Result<(), Error> {
-        self.send(Request::SetServerLogLevel(SetServerLogLevel { log_level })).await?;
+    pub async fn set_server_log_level(&self, log_level: ServerLogLevel) -> Result<(), Error> {
+        self.send(Request::SetServerLogLevel(SetServerLogLevel { log_level }))
+            .await?;
         Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub async fn request_tick_by_tick_data(
+        &self,
+        message: ReqTickByTickData,
+    ) -> Result<impl Stream<Item = Result<Response, Error>> + '_, Error> {
+        let request_id = self.send(Request::ReqTickByTickData(message)).await?;
+
+        Ok(self
+            .response_stream_by_id(Some(request_id))
+            .filter_map(|response| async move {
+                match response {
+                    Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
+                    response @ (Response::TickByTickNoneMsg(_)
+                    | Response::TickByTickBidAskMsg(_)
+                    | Response::TickByTickAllLastMsg(_)
+                    | Response::TickByTickMidPointMsg(_)) => Some(Ok(response)),
+                    _ => None,
+                }
+            }))
     }
 }
 

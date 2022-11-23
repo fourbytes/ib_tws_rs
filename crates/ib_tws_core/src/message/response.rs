@@ -10,7 +10,7 @@ use super::constants::{
     OPCODE_REQ_SCANNER_PARAMETERS, OPCODE_VERIFY_AND_AUTH_MESSAGE, OPCODE_VERIFY_AND_AUTH_REQUEST,
     OPCODE_VERIFY_MESSAGE, OPCODE_VERIFY_REQUEST,
 };
-use crate::domain::{*, market_data::MarketDataType};
+use crate::domain::{*, market_data::{MarketDataType, TickByTickType}};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -706,10 +706,10 @@ pub struct TickReqParamsMsg {
 #[allow(dead_code)]
 pub struct TickByTickAllLastMsg {
     pub req_id: i32,
-    pub tick_type: TickType,
+    pub tick_type: TickByTickType,
     pub time: i64,
     pub price: f64,
-    pub size: i32,
+    pub size: Decimal,
     pub attribs: TickAttr,
     pub exchange: String,
     pub special_conditions: String,
@@ -722,8 +722,8 @@ pub struct TickByTickBidAskMsg {
     pub time: i64,
     pub bid_price: f64,
     pub ask_price: f64,
-    pub bid_size: i32,
-    pub ask_size: i32,
+    pub bid_size: Decimal,
+    pub ask_size: Decimal,
     pub attribs: TickAttr,
 }
 

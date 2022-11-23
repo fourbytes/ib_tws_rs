@@ -128,7 +128,7 @@ pub struct TickAttr {
 
 #[derive(Debug, Clone)]
 pub struct TickByTick {
-    pub tick_type: TickType,
+    pub tick_type: TickByTickType,
     // 0 - None, 1 - Last, 2 - AllLast, 3 -BidAsk, 4 - MidPoint
     pub time: i64,
     pub price: f64,
@@ -141,6 +141,36 @@ pub struct TickByTick {
     pub ask_price: f64,
     pub ask_size: i64,
     pub mid_point: f64,
+}
+
+#[derive(Debug, Clone)]
+#[repr(i32)]
+#[allow(non_camel_case_types)]
+pub enum TickByTickType {
+    Last = 1,
+    AllLast = 2,
+    BidAsk = 3,
+    MidPoint = 4,
+}
+
+impl TryFrom<i32> for TickByTickType {
+    type Error = ();
+    fn try_from(code: i32) -> Result<Self, Self::Error> {
+        match code {
+            1 => Ok(Self::Last),
+            2 => Ok(Self::AllLast),
+            3 => Ok(Self::BidAsk),
+            4 => Ok(Self::MidPoint),
+            _ => Err(())
+        }
+    }
+}
+
+
+impl std::fmt::Display for TickByTickType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{self:?}"))
+    }
 }
 
 #[derive(Debug, Clone)]

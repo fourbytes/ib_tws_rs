@@ -14,6 +14,7 @@ use super::response::*;
 use super::util::*;
 use super::wire::{TwsWireDecoder, TwsWireEncoder};
 use crate::domain::*;
+use crate::domain::market_data::TickByTickType;
 
 pub fn encode_req_mkt_data(
     ctx: &mut Context,
@@ -304,10 +305,10 @@ pub fn decode_tick_by_tick_msg(
     let time = buf.read_long()?;
 
     match tick_type {
-        //0 => Ok(Response::TickByTickNoneMsg(TickByTickNoneMsg {})),
+        0 => Ok((Response::TickByTickNoneMsg(TickByTickNoneMsg {}), req_id)),
         1 | 2 => {
             let price = buf.read_double()?;
-            let size = buf.read_int()?;
+            let size = buf.read_decimal()?;
             let mask = buf.read_int()? as u32;
             let mut attribs: TickAttr = Default::default();
             attribs.past_limit = mask.bit(0);
@@ -317,7 +318,7 @@ pub fn decode_tick_by_tick_msg(
             Ok((
                 Response::TickByTickAllLastMsg(TickByTickAllLastMsg {
                     req_id,
-                    tick_type: tick_type.try_into().unwrap_or_default(),
+                    tick_type: tick_type.try_into().unwrap_or(TickByTickType::Last),
                     time,
                     price,
                     size,
@@ -332,8 +333,8 @@ pub fn decode_tick_by_tick_msg(
             // BidAsk
             let bid_price = buf.read_double()?;
             let ask_price = buf.read_double()?;
-            let bid_size = buf.read_int()?;
-            let ask_size = buf.read_int()?;
+            let bid_size = buf.read_decimal()?;
+            let ask_size = buf.read_decimal()?;
             let mask = buf.read_int()? as u32;
             let mut attribs: TickAttr = Default::default();
             attribs.bid_past_low = mask.bit(0);
@@ -486,7 +487,7 @@ pub fn encode_req_tick_by_tick_data(
     buf.push_int(req.req_id);
     encode_contract(buf, &req.contract);
 
-    buf.push_string(&req.tick_type);
+    buf.push_string(&req.tick_type.to_string());
 
     if ctx.server_version() >= MIN_SERVER_VER_TICK_BY_TICK_IGNORE_SIZE {
         buf.push_int(req.num_of_ticks);

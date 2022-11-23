@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::domain::{*, market_data::{GenericTick, MarketDataType}, misc::ServerLogLevel};
+use crate::domain::{*, market_data::{GenericTick, MarketDataType, TickByTickType}, misc::ServerLogLevel};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -691,11 +691,20 @@ pub struct ReqHistoricalTicks {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ReqTickByTickData {
-    pub req_id: i32,
+    pub(crate) req_id: i32,
     pub contract: Contract,
-    pub tick_type: String,
+    pub tick_type: TickByTickType,
+    /// Number of ticks
     pub num_of_ticks: i32,
+    /// Ignore size flag
     pub ignore_size: bool,
+}
+
+impl ReqTickByTickData {
+    #[must_use]
+    pub fn new(contract: Contract, tick_type: TickByTickType, num_of_ticks: i32, ignore_size: bool) -> Self {
+        Self { req_id: 0, contract, tick_type, num_of_ticks, ignore_size }
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -6,8 +6,8 @@ use std::string::ToString;
 use std::time::Duration;
 
 use futures::{StreamExt, TryStreamExt};
-use ib_tws_core::domain;
-use ib_tws_core::domain::market_data::{GenericTick, MarketDataType};
+use ib_tws_core::domain::{self, Contract};
+use ib_tws_core::domain::market_data::{GenericTick, MarketDataType, TickByTickType};
 use ib_tws_core::message::{request::*, Response};
 use miette::IntoDiagnostic;
 use sugars::hset;
@@ -35,11 +35,11 @@ async fn main() -> miette::Result<()> {
         .for_each(move |buf| async move {
             match buf {
                 Response::ErrMsgMsg(msg) => warn!("{:#?}", msg),
-                buf => info!("{:#?}", buf),
+                buf => trace!("{:#?}", buf),
             }
         }));
 
-    let contract = domain::Contract::new_cryptocurrency("ETH", "USD").unwrap();
+    let contract = Contract::new_cryptocurrency("ETH", "USD").unwrap();
 
     client.set_server_log_level(domain::misc::ServerLogLevel::Detail).await?;
     let response = client.request_contract_details(ReqContractDetails::new(contract.clone())).await?;
@@ -47,18 +47,17 @@ async fn main() -> miette::Result<()> {
     // let response = client.request_market_depth_exchanges().await?;
     // info!(?response);
     client.request_market_data_type(MarketDataType::REALTIME).await?;
-    // client.request_market_data(ReqMktData::new(
-    //     contract.clone(),
-    //     hset!{},
-    //     false,
-    //     false,
-    //     Vec::new(),
-    // )).await?
-    //     .try_for_each(move |response| async move {
-    //         info!(?response);
-    //         Ok(())
-    //     })
-    //     .await?;
+    client.request_tick_by_tick_data(ReqTickByTickData::new(
+        contract.clone(),
+        TickByTickType::AllLast,
+        0,
+        false,
+    )).await?
+        .try_for_each(move |response| async move {
+            info!(?response);
+            Ok(())
+        })
+        .await?;
     client.request_market_depth(ReqMktDepth::new(contract, 10, false, vec![])).await?
         .try_for_each(move |response| async move {
             info!(?response);
