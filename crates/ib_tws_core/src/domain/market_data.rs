@@ -2,6 +2,8 @@ use std::convert::From;
 use std::fmt;
 use std::i32;
 
+use rust_decimal::Decimal;
+
 #[derive(Debug, Clone)]
 pub struct MarketDataTypeMsg {
     pub req_id: i32,
@@ -78,9 +80,9 @@ pub struct Bar {
     pub high: f64,
     pub low: f64,
     pub close: f64,
-    pub volume: i64,
+    pub volume: Decimal,
     pub count: i32,
-    pub wap: f64,
+    pub wap: Decimal,
 }
 
 impl baseline::bar::OHLC for Bar {
@@ -104,7 +106,7 @@ impl baseline::bar::OHLC for Bar {
 }
 
 impl baseline::bar::Volume for Bar {
-    type Type = i64;
+    type Type = Decimal;
 
     fn volume(&self) -> Self::Type {
         self.volume

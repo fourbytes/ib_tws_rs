@@ -47,6 +47,18 @@ async fn main() -> miette::Result<()> {
     // let response = client.request_market_depth_exchanges().await?;
     // info!(?response);
     client.request_market_data_type(MarketDataType::REALTIME).await?;
+    let bars = client.request_historical_data(ReqHistoricalData::new(
+        contract.clone(),
+        "20221001 00:00:00 UTC".to_owned(),
+        "1 D".to_owned(),
+        "5 mins".to_owned(),
+        "TRADES".to_owned(),
+        0,
+        2,
+        false,
+        vec![]
+    )).await?;
+    info!(?bars);
     client.request_tick_by_tick_data(ReqTickByTickData::new(
         contract.clone(),
         TickByTickType::AllLast,

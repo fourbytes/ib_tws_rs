@@ -96,8 +96,8 @@ pub fn decode_historical_data_update_msg(
     let close = buf.read_double()?;
     let high = buf.read_double()?;
     let low = buf.read_double()?;
-    let wap = buf.read_double()?;
-    let volume = buf.read_long()?;
+    let wap = buf.read_decimal()?;
+    let volume = buf.read_decimal()?;
 
     Ok((
         Response::HistoricalDataUpdateMsg(HistoricalDataUpdateMsg {
@@ -178,13 +178,9 @@ pub fn decode_historical_data_msg(
         let high = buf.read_double()?;
         let low = buf.read_double()?;
         let close = buf.read_double()?;
-        let volume = if ctx.server_version() < MIN_SERVER_VER_SYNT_REALTIME_BARS {
-            i64::from(buf.read_int()?)
-        } else {
-            buf.read_long()?
-        };
+        let volume = buf.read_decimal()?;
 
-        let wap = buf.read_double()?;
+        let wap = buf.read_decimal()?;
 
         if ctx.server_version() < MIN_SERVER_VER_SYNT_REALTIME_BARS {
             let _has_gaps = buf.read_string()?;

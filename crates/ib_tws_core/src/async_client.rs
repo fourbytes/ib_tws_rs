@@ -15,9 +15,9 @@ use crate::{
         constants::{MAX_VERSION, MIN_VERSION},
         request::{
             Handshake, ReqAccountSummary, ReqContractDetails, ReqMarketDataType, ReqMktData,
-            ReqMktDepth, ReqMktDepthExchanges, ReqTickByTickData, SetServerLogLevel, StartApi,
+            ReqMktDepth, ReqMktDepthExchanges, ReqTickByTickData, SetServerLogLevel, StartApi, ReqHistoricalData,
         },
-        response::{AccountSummaryMsg, HandshakeAck, MktDepthExchangesMsg},
+        response::{AccountSummaryMsg, HandshakeAck, MktDepthExchangesMsg, HistoricalDataMsg},
         Request, Response,
     },
     Error,
@@ -374,6 +374,27 @@ impl AsyncClient {
                     _ => None,
                 }
             }))
+    }
+
+    #[instrument(skip(self))]
+    pub async fn request_historical_data(
+        &self,
+        message: ReqHistoricalData,
+    ) -> Result<HistoricalDataMsg, Error> {
+        let request_id = self.send(Request::ReqHistoricalData(message)).await?;
+
+        Box::pin(self
+            .response_stream_by_id(Some(request_id))
+            .filter_map(|response| async move {
+                match response {
+                    Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
+                    Response::HistoricalDataMsg(msg) => Some(Ok(msg)),
+                    _ => None,
+                }
+            }))
+            .try_next()
+            .await?
+            .ok_or(Error::ResponseChannelClosed)
     }
 }
 

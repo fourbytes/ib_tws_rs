@@ -1,6 +1,10 @@
 use std::collections::HashSet;
 
-use crate::domain::{*, market_data::{GenericTick, MarketDataType, TickByTickType}, misc::ServerLogLevel};
+use crate::domain::{
+    market_data::{GenericTick, MarketDataType, TickByTickType},
+    misc::ServerLogLevel,
+    *,
+};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -182,7 +186,14 @@ pub struct ReqMktData {
 }
 
 impl ReqMktData {
-    #[must_use] pub fn new(contract: Contract, generic_tick_list: HashSet<GenericTick>, snapshot: bool, regulatory_snapshot: bool, mkt_data_options: Vec<TagValue>) -> Self {
+    #[must_use]
+    pub fn new(
+        contract: Contract,
+        generic_tick_list: HashSet<GenericTick>,
+        snapshot: bool,
+        regulatory_snapshot: bool,
+        mkt_data_options: Vec<TagValue>,
+    ) -> Self {
         Self {
             req_id: 0,
             contract,
@@ -221,6 +232,33 @@ pub struct ReqHistoricalData {
     pub chart_options: Vec<TagValue>,
 }
 
+impl ReqHistoricalData {
+    pub fn new(
+        contract: Contract,
+        end_date_time: String,
+        duration_str: String,
+        bar_size_setting: String,
+        what_to_show: String,
+        use_rth: i32,
+        format_date: i32,
+        keepup_to_date: bool,
+        chart_options: Vec<TagValue>,
+    ) -> Self {
+        Self {
+            req_id: 0,
+            contract,
+            end_date_time,
+            duration_str,
+            bar_size_setting,
+            what_to_show,
+            use_rth,
+            format_date,
+            keepup_to_date,
+            chart_options,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ReqHeadTimestamp {
@@ -256,8 +294,12 @@ pub struct ReqContractDetails {
 }
 
 impl ReqContractDetails {
-    #[must_use] pub fn new(contract: Contract) -> Self {
-        Self { req_id: 0, contract }
+    #[must_use]
+    pub fn new(contract: Contract) -> Self {
+        Self {
+            req_id: 0,
+            contract,
+        }
     }
 }
 
@@ -272,8 +314,20 @@ pub struct ReqMktDepth {
 }
 
 impl ReqMktDepth {
-    #[must_use] pub fn new(contract: Contract, num_rows: i32, is_smart_depth: bool, options: Vec<TagValue>) -> Self {
-        Self { req_id: 0, contract, num_rows, is_smart_depth, options }
+    #[must_use]
+    pub fn new(
+        contract: Contract,
+        num_rows: i32,
+        is_smart_depth: bool,
+        options: Vec<TagValue>,
+    ) -> Self {
+        Self {
+            req_id: 0,
+            contract,
+            num_rows,
+            is_smart_depth,
+            options,
+        }
     }
 }
 
@@ -702,8 +756,19 @@ pub struct ReqTickByTickData {
 
 impl ReqTickByTickData {
     #[must_use]
-    pub fn new(contract: Contract, tick_type: TickByTickType, num_of_ticks: i32, ignore_size: bool) -> Self {
-        Self { req_id: 0, contract, tick_type, num_of_ticks, ignore_size }
+    pub fn new(
+        contract: Contract,
+        tick_type: TickByTickType,
+        num_of_ticks: i32,
+        ignore_size: bool,
+    ) -> Self {
+        Self {
+            req_id: 0,
+            contract,
+            tick_type,
+            num_of_ticks,
+            ignore_size,
+        }
     }
 }
 
