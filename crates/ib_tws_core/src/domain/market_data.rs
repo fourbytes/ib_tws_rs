@@ -83,6 +83,34 @@ pub struct Bar {
     pub wap: f64,
 }
 
+impl baseline::bar::OHLC for Bar {
+    type Type = f64;
+
+    fn open(&self) -> Self::Type {
+        self.open
+    }
+
+    fn high(&self) -> Self::Type {
+        self.high
+    }
+
+    fn low(&self) -> Self::Type {
+        self.low
+    }
+
+    fn close(&self) -> Self::Type {
+        self.close
+    }
+}
+
+impl baseline::bar::Volume for Bar {
+    type Type = i64;
+
+    fn volume(&self) -> Self::Type {
+        self.volume
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct HistoricalTick {
     pub time: i64,
