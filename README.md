@@ -1,7 +1,10 @@
 <h1 align="center">Interactive Brokers TWS API (Rust)</h1>
 <p align="center">
+    <img src="https://img.shields.io/crates/l/ib_tws_core" />
+</p>
+<p align="center">
 	<a href="https://github.com/fourbytes/ib_tws_rs/tree/main/crates/ib_tws_tokio/examples">Examples</a>
-	<img src="https://img.shields.io/crates/l/ib_tws_core?style=for-the-badge" />
+    <!-- &nbsp;&bull;&nbsp; --!>
 </p>
 
 ## Overview
@@ -9,11 +12,10 @@
 **Min. TWS API Version:** 149
 
 ### Goals
-## Goals
 - Keep core code separate so it can be used in both async and sync clients.
 - Compatible with stable Rust.
 
-## Non Goals
+### Non Goals
 - Design parity with the official API.
 
 
