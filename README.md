@@ -1,4 +1,4 @@
-# Interactive Brokers TWS API for Rust
+<h1 align="center">Interactive Brokers TWS API (Rust)</h1>
 [![LGPL 3.0](https://img.shields.io/crates/l/ib_tws_core?style=for-the-badge)](https://choosealicense.com/licenses/lgpl-3.0/)
 
 - Min. TWS API Version: 149
@@ -21,12 +21,12 @@ info!(version = client.server_version(), "connected to client");
 ### [`ib_tws_core`](https://github.com/fourbytes/ib_tws_rs/tree/main/crates/ib_tws_core)
 [![crates.io](https://img.shields.io/crates/v/ib_tws_core?style=for-the-badge)](https://crates.io/crates/ib_tws_core) [![docs.rs](https://img.shields.io/badge/docs.rs-ib_tws_core-rs?style=for-the-badge)](https://docs.rs/ib_tws_core)
 
-Contains core components including messages and encoding/decoding utilities.
+Contains core components including messages and encoding/decoding utilities, as well as a high-level `AsyncClient`.
 
 ### [`ib_tws_tokio`](https://github.com/fourbytes/ib_tws_rs/tree/main/crates/ib_tws_tokio)
 [![crates.io](https://img.shields.io/crates/v/ib_tws_tokio?style=for-the-badge)](https://crates.io/crates/ib_tws_core) [![docs.rs](https://img.shields.io/badge/docs.rs-ib_tws_tokio-rs?style=for-the-badge)](https://docs.rs/ib_tws_tokio)
 
-A client implementation using Tokio.
+A transport implementation using Tokio, intended to be used with the `ib_tws_core::AsyncClient`.
 
 ## Goals
 - Keep as much common code in `ib_tws_core` as possible.
