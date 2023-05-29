@@ -372,7 +372,8 @@ impl AsyncClient {
                     | Response::TickByTickAllLastMsg(_)
                     | Response::TickByTickMidPointMsg(_)
                     | Response::HistoricalTickLastMsg(_)
-                    | Response::HistoricalTickBidAskMsg(_)) => Some(Ok(response)),
+                    | Response::HistoricalTickBidAskMsg(_)
+                    | Response::HistoricalTicksMsg(_)) => Some(Ok(response)),
                     _ => None,
                 }
             }))
