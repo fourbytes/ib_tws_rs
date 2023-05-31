@@ -53,7 +53,12 @@ pub trait TwsWireEncoder {
 
     #[inline(always)]
     fn push_double(&mut self, v: f64) {
-        self.push_string(&v.to_string());
+        // This is what the java client sends
+        if v == f64::MAX {
+            self.push_string("1.7976931348623157E308");
+        } else {
+            self.push_string(&v.to_string());
+        }
     }
 
     #[inline(always)]

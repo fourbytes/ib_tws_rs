@@ -1,4 +1,5 @@
 use std::io;
+use std::str;
 use std::{f64, i32};
 
 use bytes::BytesMut;
@@ -662,8 +663,16 @@ pub fn encode_place_order(
 ) -> Result<DispatchId, EncodeError> {
     const VERSION: i32 = 45;
 
+    // Allocate length header...
+    buf.push_u8(0);
+    buf.push_u8(0);
+    buf.push_u8(0);
+    buf.push_u8(0);
+
     buf.push_int(PLACE_ORDER);
-    buf.push_int(VERSION);
+    if ctx.server_version() < MIN_SERVER_VER_ORDER_CONTAINER {
+        buf.push_int(VERSION);
+    }
     buf.push_int(req.id);
 
     encode_contract(buf, &req.contract);
@@ -811,6 +820,8 @@ pub fn encode_place_order(
         buf.push_int(uc.con_id);
         buf.push_double(uc.delta);
         buf.push_double(uc.price);
+    } else {
+        buf.push_bool(false);
     }
 
     buf.push_string(&req.order.algo_strategy);
@@ -843,13 +854,14 @@ pub fn encode_place_order(
         buf.push_int(req.order.conditions.len() as i32);
 
         // TODO
-        for item in &req.order.conditions {
-            buf.push_int(item.type_val());
-            encoder_order_condition(buf, item);
+        if req.order.conditions.len() as i32 > 0 {
+            for item in &req.order.conditions {
+                buf.push_int(item.type_val());
+                encoder_order_condition(buf, item);
+            }
+            buf.push_bool(req.order.conditions_ignore_rth);
+            buf.push_bool(req.order.conditions_cancel_order);
         }
-
-        buf.push_bool(req.order.conditions_ignore_rth);
-        buf.push_bool(req.order.conditions_cancel_order);
 
         buf.push_string(req.order.adjusted_order_type.to_string().as_str());
         buf.push_double(req.order.trigger_price);
@@ -868,6 +880,62 @@ pub fn encode_place_order(
         buf.push_string(&req.order.soft_dollar_tier.name);
         buf.push_string(&req.order.soft_dollar_tier.value);
     }
+
+    if ctx.server_version() >= MIN_SERVER_VER_CASH_QTY {
+        buf.push_double_max(req.order.cash_qty);
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_DECISION_MAKER {
+        buf.push_string(&req.order.mifid2_decision_maker);
+        buf.push_string(&req.order.mified2_decision_algo)
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_MIFID_EXECUTION {
+        buf.push_string(&req.order.mified2_execution_trader);
+        buf.push_string(&req.order.mified2_execution_algo);
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_AUTO_PRICE_FOR_HEDGE {
+        buf.push_bool(req.order.dont_use_auto_price_for_hedge);
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_ORDER_CONTAINER {
+        buf.push_bool(false)
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_D_PEG_ORDERS {
+        buf.push_bool(false);
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_PRICE_MGMT_ALGO {
+        buf.push_bool(false);
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_DURATION {
+        buf.push_int(0);
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_POST_TO_ATS {
+        buf.push_int(0);
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_AUTO_CANCEL_PARENT {
+        buf.push_bool(false);
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_ADVANCED_ORDER_REJECT {
+        buf.push_string("");
+    }
+
+    if ctx.server_version() >= MIN_SERVER_VER_MANUAL_ORDER_TIME {
+        buf.push_string("");
+    }
+
+    buf.push_u8(0);
+    buf.push_u8(0);
+
+    let the_string = str::from_utf8(buf).unwrap();
+    println!("{}", the_string);
 
     Ok(DispatchId::Oneshot(req.id))
 }
