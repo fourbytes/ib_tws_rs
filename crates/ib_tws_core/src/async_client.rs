@@ -250,6 +250,29 @@ impl AsyncClient {
         .unwrap()
     }
 
+    pub async fn request_contract_details_many(
+        &self,
+        message: ReqContractDetails,
+    ) -> Result<impl Stream<Item = Result<ContractDetails, Error>> + '_, Error> {
+        let request_id = self.send(Request::ReqContractDetails(message)).await?;
+
+        Ok(self.response_stream_by_id(Some(request_id))
+           .take_while(|response| {
+               let is_end = matches!(response, Response::ContractDataEndMsg(_));
+               async move { !is_end }
+           })
+           .filter_map(|response| async move {
+               match response {
+                   Response::ErrMsgMsg(err) => Some(Err(Error::ApiError(err))),
+                   Response::ContractDataMsg(msg) => Some(Ok(msg.contract_details)),
+                   _ => {
+                       warn!(?response, "unexpected response for request id");
+                       None
+                   }
+               }
+           }))
+    }
+
     #[instrument(skip(self))]
     pub async fn request_account_summary(
         &self,
